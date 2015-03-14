@@ -7,3 +7,10 @@ axis_vars <- c(
     "Year" = "Year",
     "Length (minutes)" = "Runtime"
 )
+
+ckan_instances <-  c(
+  "DPaW Internal" = "http://internal-data.dpaw.wa.gov.au/",
+  "DPaW Sandbox" = "http://test-data.dpaw.wa.gov.au/",
+  "DPaW Public" = "http://data-demo.dpaw.wa.gov.au/"
+)
+
