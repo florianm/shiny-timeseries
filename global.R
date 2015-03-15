@@ -1,3 +1,7 @@
+library(shiny)
+library(ggplot2)
+library(markdown)
+
 # Variables that can be put on the x and y axes
 axis_vars <- c(
     "Tomato Meter" = "Meter",

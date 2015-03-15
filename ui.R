@@ -1,31 +1,39 @@
-library(shiny)
-library(markdown)
 shinyUI(
-  navbarPage(
-    "Time series explorer",
-    tabPanel(
-      "Load Data",
-      fluidRow(
-        column(3,
-               wellPanel(
-                 h4("Load Data"),
-                 textInput("csv_url", "Paste CSV data resource URL"),
-                 uiOutput("xcol"),
-                 uiOutput("ycol"),
-                 uiOutput("gcol")
-               ), # /wellPanel
-               wellPanel(
-                 h4("Save Figure"),
-                 textInput("api_key", "Paste your CKAN API key"),
-                 textInput("pdf_url", "Paste PDF graph resource URL")
-               ) # /wellPanel
-        ), # /col3
-        column(9,
-               p("Inspect data selection"),
-               dataTableOutput("table")
-        ) # /col9
-      ) # /fluidRow
-    ) # /tabPanel
+  fluidPage(
+    titlePanel("Time series explorer"),
+    sidebarLayout(
+      sidebarPanel(
 
-  )) # /navbar, app
 
+        wellPanel(
+          h4("Load Data"),
+          textInput("csv_url", "Paste CSV URL"),
+          uiOutput("xcol"),
+          uiOutput("ycol"),
+          uiOutput("gcol")
+        ), # /wellPanel
+
+        wellPanel(
+          h4("Plot Data"),
+          p("Set graphics parameters")
+        ), # /wellPanel
+
+        wellPanel(
+          h4("Save Figure"),
+          textInput("api_key", "Paste CKAN API key"),
+          textInput("pdf_url", "Paste PDF URL")
+        ) # /wellPanel
+
+      ), # /sidebarPanel
+      mainPanel(
+
+        tabsetPanel(type = "tabs",
+                    tabPanel("Summary", verbatimTextOutput("summary")),
+                    tabPanel("Table", dataTableOutput("table")),
+                    tabPanel("Figure", plotOutput("plot"))
+        ) # /tabsetPanel
+
+      ) # /mainPanel
+    ) # /sidebarLayout
+  ) # /fluidPage
+) # /shinyUI
