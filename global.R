@@ -1,6 +1,7 @@
 library(shiny)
-library(ggplot2)
-library(markdown)
+require(ggplot2) || install.packages("ggplot2")
+require(markdown) || install.packages("markdown")
+require(lubridate) || install.packages("lubridate")
 
 # Variables that can be put on the x and y axes
 axis_vars <- c(

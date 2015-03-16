@@ -31,7 +31,7 @@ shinyServer(function(input, output) {
   })
 
   # Reactive data, summary, table
-  output$data <- data()
+  output$data <- reactive({ data() })
   output$summary <- renderPrint({ summary(data()) })
   output$table <- renderDataTable({ data() })
 
