@@ -7,15 +7,17 @@ shinyUI(
 
         wellPanel(
           h4("Load Data"),
-          textInput("csv_url", "Paste CSV URL"),
+#           textInput("csv_url", "Paste CSV URL"),
+          selectizeInput('csv_url', 'Select dataset', choices = test_datasets),
           uiOutput("xcol"),
           uiOutput("ycol"),
+          uiOutput("has_groups"),
           uiOutput("gcol")
         ), # /wellPanel
 
         wellPanel(
           h4("Plot Data"),
-          p("Set graphics parameters")
+          uiOutput("plot_pd")
         ), # /wellPanel
 
         wellPanel(

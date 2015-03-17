@@ -2,20 +2,25 @@ library(shiny)
 require(ggplot2) || install.packages("ggplot2")
 require(markdown) || install.packages("markdown")
 require(lubridate) || install.packages("lubridate")
+require(qcc) || install.packages("qcc")
 
-# Variables that can be put on the x and y axes
-axis_vars <- c(
-    "Tomato Meter" = "Meter",
-    "Numeric Rating" = "Rating",
-    "Number of reviews" = "Reviews",
-    "Dollars at box office" = "BoxOffice",
-    "Year" = "Year",
-    "Length (minutes)" = "Runtime"
+#' The GGplot2 theme for MPA graphs
+mpa_theme <- theme(
+  axis.text.x = element_text(size=14),
+  axis.text.y = element_text(size=14),
+  axis.title.x=element_blank(),
+  axis.title.y=element_text(size=14),
+  axis.line=element_line(colour="black"),
+  panel.grid.minor = element_blank(),
+  panel.grid.major = element_blank(),
+  panel.border=element_blank(),
+  panel.background=element_blank(),
+  legend.justification=c(1,10), legend.position=c(1,10), # Position legend in top right
+  legend.title = element_blank(),
+  legend.key = element_blank())
+
+#' Selected time series datasets
+test_datasets <- c(
+  "WNIMP Black Bream avg weight" = "http://internal-data.dpaw.wa.gov.au/dataset/cd754eda-0998-49e0-852a-2ee5d8e3b075/resource/b3a36efe-039b-4a90-96e0-0b90441c14b8/download/wnimpfishingcompetitions.csv",
+  "EMBMP Rainfall" = "http://internal-data.dpaw.wa.gov.au/dataset/0f86add2-eb6d-4ba9-bd9d-2f5590c005cd/resource/4ed57506-12c7-4702-a11f-fc0c90bf0d16/download/IDCJAC0001004068Data1.csv"
 )
-
-ckan_instances <-  c(
-  "DPaW Internal" = "http://internal-data.dpaw.wa.gov.au/",
-  "DPaW Sandbox" = "http://test-data.dpaw.wa.gov.au/",
-  "DPaW Public" = "http://data-demo.dpaw.wa.gov.au/"
-)
-
