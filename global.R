@@ -8,7 +8,7 @@ require(qcc) || install.packages("qcc")
 mpa_theme <- theme(
   axis.text.x = element_text(size=14),
   axis.text.y = element_text(size=14),
-  axis.title.x=element_blank(),
+  axis.title.x=element_text(size=14), # or element_blank(),
   axis.title.y=element_text(size=14),
   axis.line=element_line(colour="black"),
   panel.grid.minor = element_blank(),

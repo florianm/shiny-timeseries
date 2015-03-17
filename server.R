@@ -58,7 +58,8 @@ shinyServer(function(input, output) {
   output$table <- renderDataTable({ data() })
   output$plot_simple <- renderPlot({
     df <-data()
-    plot(df[[input$ycol]] ~ df[[input$xcol]], xlab="", ylab=input$y_label)
+    plot(df[[input$ycol]] ~ df[[input$xcol]],
+         xlab=input$x_label, ylab=input$y_label)
   })
 
   output$plot_ggplot <- renderPlot({
@@ -69,14 +70,15 @@ shinyServer(function(input, output) {
     x_limits <- c(x_min-input$x_extra, x_max+input$x_extra)
     x_breaks <- x_min:x_max
     point_size <- 3
+    pd <- position_dodge(input$pd)
 
-    ggplot(df, aes_string(x="year", y="weight")) +
-      geom_line(position=input$pd) +
-      geom_point(position=input$pd, size=point_size) +
+    ggplot(df, aes_string(x=input$xcol, y=input$ycol)) +
+      geom_line(position=pd) +
+      geom_point(position=pd, size=point_size) +
       ylab(input$y_label) +
+      xlab(input$x_label) +
       scale_x_continuous(limits=x_limits, breaks=x_breaks) +
       mpa_theme
-
   })
 
 })
