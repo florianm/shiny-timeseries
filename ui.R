@@ -4,10 +4,9 @@ shinyUI(
     sidebarLayout(
       sidebarPanel(
 
-
         wellPanel(
           h4("Load Data"),
-#           textInput("csv_url", "Paste CSV URL"),
+          # textInput("csv_url", "Paste CSV URL"),
           selectizeInput('csv_url', 'Select dataset', choices = test_datasets),
           uiOutput("xcol"),
           uiOutput("ycol"),
@@ -17,7 +16,11 @@ shinyUI(
 
         wellPanel(
           h4("Plot Data"),
-          uiOutput("plot_pd")
+          uiOutput("plot_title"),
+          uiOutput("plot_ylab"),
+          uiOutput("plot_xlab"),
+          uiOutput("plot_pd"),
+          uiOutput("plot_x_extra")
         ), # /wellPanel
 
         wellPanel(
@@ -30,10 +33,21 @@ shinyUI(
       mainPanel(
 
         tabsetPanel(type = "tabs",
-                    tabPanel("Summary",
+
+                    tabPanel("Inspect Data",
+                             h3("Summary"),
+                             p("Which columns would you like to plot?"),
                              verbatimTextOutput("summary"),
-                             dataTableOutput("table")),
-                    tabPanel("Figure", plotOutput("plot"))
+                             h3("Preview"),
+                             dataTableOutput("table")
+                    ),
+
+                    tabPanel("Figure",
+                             h3("Simple Plot"),
+                             plotOutput("plot_simple"),
+                             h3("GGplot2 Figure"),
+                             plotOutput("plot_ggplot")
+                    )
         ) # /tabsetPanel
 
       ) # /mainPanel

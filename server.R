@@ -36,45 +36,46 @@ shinyServer(function(input, output) {
     items=names(df)
     names(items)=items
     conditionalPanel(condition = "input.has_groups == true",
-
                      selectInput("gcol", "Select Group Variable", items)
     )
   })
 
+  output$plot_title <- renderUI({ textInput("title", "Figure title") })
+  output$plot_ylab <- renderUI({ textInput("y_label", "Y axis label") })
+  output$plot_xlab <- renderUI({ textInput("x_label", "X axis label") })
   output$plot_pd <- renderUI({
-    sliderInput(inputId = "plot_pd",
-                label = "Position dodge",
+    sliderInput(inputId = "pd", label = "Position dodge",
                 min = 0, max = 1, value = 0.25, step = 0.05)
   })
+  output$plot_x_extra <- renderUI({
+    sliderInput(inputId = "x_extra", label = "X scale padding",
+                min = 0, max = 1, value = 0.15, step = 0.05)
+  })
 
-  # Reactive data, summary, table
+
+
   output$summary <- renderPrint({ summary(data()) })
   output$table <- renderDataTable({ data() })
-
-
-  pd = reactive ({ ggplot2::position_dodge(input$pd) })
-
-  # Plot
-  output$plot <- renderPlot({
+  output$plot_simple <- renderPlot({
     df <-data()
-#     if (is.null(df)) return(NULL)
+    plot(df[[input$ycol]] ~ df[[input$xcol]], xlab="", ylab=input$y_label)
+  })
 
-# Option 1 - plot()
-    plot(df)
+  output$plot_ggplot <- renderPlot({
+    df <-data()
 
-# Option 2: ggplot2
-#     ggplot(df, aes(x=input$xcol, y=input$ycol)) +
-#       geom_line(position=pd()) +
-#       geom_point(position=pd(), size=3) +
-#       xlab("Year") +
-#       ylab("Average weight (g)") +
-#       scale_x_continuous(limits=c(min(df$year-0.15), max(df$year+0.15)),
-#                          breaks=min(df$year):max(df$year)) +
-#       mpa_theme
+    x_min <- min(df[[input$xcol]])
+    x_max <- max(df[[input$xcol]])
+    x_limits <- c(x_min-input$x_extra, x_max+input$x_extra)
+    x_breaks <- x_min:x_max
+    point_size <- 3
 
-#     if (input$individual_obs) { }
-
-# Option 3: qcc
+    ggplot(df, aes_string(x="year", y="weight")) +
+      geom_line(position=input$pd) +
+      geom_point(position=input$pd, size=point_size) +
+      ylab(input$y_label) +
+      scale_x_continuous(limits=x_limits, breaks=x_breaks) +
+      mpa_theme
 
   })
 
