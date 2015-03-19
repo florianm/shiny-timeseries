@@ -21,7 +21,7 @@ shinyServer(function(input, output) {
     if (is.null(df)) return(NULL)
     items=names(df)
     names(items)=items
-    selectInput("ycol", "Select Y Variable", items)
+    selectInput("ycol", "Select Y Variable", items, selected=items[2])
   })
 
   output$has_groups <- renderUI({
@@ -62,23 +62,44 @@ shinyServer(function(input, output) {
          xlab=input$x_label, ylab=input$y_label)
   })
 
-  output$plot_ggplot <- renderPlot({
+  # Step 1 - reactive plot object
+  plot_ggplot <- reactive(function() {
     df <-data()
 
+    x_col <- input$xcol
+    y_col <- input$ycol
     x_min <- min(df[[input$xcol]])
     x_max <- max(df[[input$xcol]])
     x_limits <- c(x_min-input$x_extra, x_max+input$x_extra)
     x_breaks <- x_min:x_max
     point_size <- 3
     pd <- position_dodge(input$pd)
-
-    ggplot(df, aes_string(x=input$xcol, y=input$ycol)) +
-      geom_line(position=pd) +
-      geom_point(position=pd, size=point_size) +
-      ylab(input$y_label) +
-      xlab(input$x_label) +
-      scale_x_continuous(limits=x_limits, breaks=x_breaks) +
-      mpa_theme
+    p <- print(
+      ggplot(df, aes_string(x=x_col, y=y_col)) +
+        geom_line(position=pd) +
+        geom_point(position=pd, size=point_size) +
+        ylab(input$y_label) +
+        xlab(input$x_label) +
+        scale_x_continuous(limits=x_limits, breaks=x_breaks) +
+        mpa_theme
+    )
   })
+
+  # Step 2 - output object: rendered plot
+  output$plot_ggplot <- renderPlot({
+    plot_ggplot()
+  })
+
+  # Step 3 - output object: download PDF
+  output$downloadPdf <- downloadHandler(
+    filename = function() { paste0(input$pdf_filename, '.pdf') },
+    content = function(file) {
+      pdf(file, height = 5, width = 7);
+      print(plot_ggplot());
+      dev.off()
+    }
+  )
+
+
 
 })

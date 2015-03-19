@@ -26,7 +26,9 @@ shinyUI(
         wellPanel(
           h4("Save Figure"),
           textInput("api_key", "Paste CKAN API key"),
-          textInput("pdf_url", "Paste PDF URL")
+          textInput("pdf_url", "Paste PDF URL"),
+          textInput("pdf_filename", "PDF file name", value="figure"),
+          downloadButton("downloadPdf", "Download PDF")
         ) # /wellPanel
 
       ), # /sidebarPanel
@@ -43,9 +45,9 @@ shinyUI(
                     ),
 
                     tabPanel("Figure",
-                             h3("Simple Plot"),
-                             plotOutput("plot_simple"),
-                             h3("GGplot2 Figure"),
+#                              h3("Simple Plot"),
+#                              plotOutput("plot_simple"),
+#                              h3("GGplot2 Figure"),
                              plotOutput("plot_ggplot")
                     )
         ) # /tabsetPanel
