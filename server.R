@@ -59,12 +59,12 @@ shinyServer(function(input, output) {
   # output object: data table
   output$table <- renderDataTable({ data() })
 
-#   # output object: a simple plot
-#   output$plot_simple <- renderPlot({
-#     df <-data()
-#     plot(df[[input$ycol]] ~ df[[input$xcol]],
-#          xlab=input$x_label, ylab=input$y_label)
-#   })
+  #   # output object: a simple plot
+  #   output$plot_simple <- renderPlot({
+  #     df <-data()
+  #     plot(df[[input$ycol]] ~ df[[input$xcol]],
+  #          xlab=input$x_label, ylab=input$y_label)
+  #   })
 
   # ggplot object
   plot_ggplot <- reactive(function() {
@@ -105,37 +105,45 @@ shinyServer(function(input, output) {
     }
   )
 
+  text_instruction <- reactive({
+    if (is.null(input$rcode_url) || input$rcode_url == "") { return(NULL) }
+    paste0("## Reproduce the figure:\n# source('", input$rcode_url, "')\n\n")
+  })
+
   # r code spelled out
   plot_code <- reactive({
     print(
-      paste0("df <- read.table('", input$csv_url,
-             "', sep=',', header=T, stringsAsFactors=T)\n\n",
+      paste0(
+        text_instruction(),
 
-             "pdf('", input$output_filename,".pdf', height = 5, width = 7);\n\n",
+        "df <- read.table('", input$csv_url,
+        "', sep=',', header=T, stringsAsFactors=T)\n\n",
 
-             "ggplot(df, aes_string(x=", input$xcol, ", y=", input$ycol, ")) +\n",
-             "  geom_line(position=position_dodge(", input$pd,")) +\n",
-             "  geom_point(position=position_dodge(", input$pd,"), size=3) +\n",
-             "  ylab(", input$y_label,") +\n",
-             "  xlab(", input$x_label,") +\n",
-             "  scale_x_continuous(limits=x_limits, breaks=x_breaks) +\n",
-             "  theme(\n",
-             "    axis.text.x = element_text(size=14),\n",
-             "    axis.text.y = element_text(size=14),\n",
-             "    axis.title.x=element_text(size=14), # or element_blank(),\n",
-             "    axis.title.y=element_text(size=14),\n",
-             "    axis.line=element_line(colour='black'),\n",
-             "    panel.grid.minor = element_blank(),\n",
-             "    panel.grid.major = element_blank(),\n",
-             "    panel.border=element_blank(),\n",
-             "    panel.background=element_blank(),\n",
-             "    legend.justification=c(1,10),\n",
-             "    legend.position=c(1,10), # Position legend in top right\n",
-             "    legend.title = element_blank(),\n",
-             "    legend.key = element_blank()\n",
-             "  )\n\n",
+        "pdf('", input$output_filename,".pdf', height = 5, width = 7);\n\n",
 
-             "dev.off()\n"
+        "ggplot(df, aes_string(x=", input$xcol, ", y=", input$ycol, ")) +\n",
+        "  geom_line(position=position_dodge(", input$pd,")) +\n",
+        "  geom_point(position=position_dodge(", input$pd,"), size=3) +\n",
+        "  ylab(", input$y_label,") +\n",
+        "  xlab(", input$x_label,") +\n",
+        "  scale_x_continuous(limits=x_limits, breaks=x_breaks) +\n",
+        "  theme(\n",
+        "    axis.text.x = element_text(size=14),\n",
+        "    axis.text.y = element_text(size=14),\n",
+        "    axis.title.x=element_text(size=14), # or element_blank(),\n",
+        "    axis.title.y=element_text(size=14),\n",
+        "    axis.line=element_line(colour='black'),\n",
+        "    panel.grid.minor = element_blank(),\n",
+        "    panel.grid.major = element_blank(),\n",
+        "    panel.border=element_blank(),\n",
+        "    panel.background=element_blank(),\n",
+        "    legend.justification=c(1,10),\n",
+        "    legend.position=c(1,10), # Position legend in top right\n",
+        "    legend.title = element_blank(),\n",
+        "    legend.key = element_blank()\n",
+        "  )\n\n",
+
+        "dev.off()\n"
       ) # /paste
     ) # /print
   }) #/reactive
