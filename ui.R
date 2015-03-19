@@ -48,7 +48,9 @@ shinyUI(
 #                              h3("Simple Plot"),
 #                              plotOutput("plot_simple"),
 #                              h3("GGplot2 Figure"),
-                             plotOutput("plot_ggplot")
+                             plotOutput("plot_ggplot"),
+                              verbatimTextOutput("rcode")
+
                     )
         ) # /tabsetPanel
 
