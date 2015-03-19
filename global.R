@@ -5,19 +5,18 @@ require(lubridate) || install.packages("lubridate")
 require(qcc) || install.packages("qcc")
 
 #' The GGplot2 theme for MPA graphs
-mpa_theme <- theme(
-  axis.text.x = element_text(size=14),
-  axis.text.y = element_text(size=14),
-  axis.title.x=element_text(size=14), # or element_blank(),
-  axis.title.y=element_text(size=14),
-  axis.line=element_line(colour="black"),
-  panel.grid.minor = element_blank(),
-  panel.grid.major = element_blank(),
-  panel.border=element_blank(),
-  panel.background=element_blank(),
-  legend.justification=c(1,10), legend.position=c(1,10), # Position legend in top right
-  legend.title = element_blank(),
-  legend.key = element_blank())
+mpa_theme <- theme(axis.text.x = element_text(size=14),
+                   axis.text.y = element_text(size=14),
+                   axis.title.x=element_text(size=14), # or element_blank(),
+                   axis.title.y=element_text(size=14),
+                   axis.line=element_line(colour="black"),
+                   panel.grid.minor = element_blank(),
+                   panel.grid.major = element_blank(),
+                   panel.border=element_blank(),
+                   panel.background=element_blank(),
+                   legend.justification=c(1,10), legend.position=c(1,10), # Position legend in top right
+                   legend.title = element_blank(),
+                   legend.key = element_blank())
 
 #' Selected time series datasets
 test_datasets <- c(

@@ -1,13 +1,13 @@
 shinyServer(function(input, output) {
 
-  # Data source: CSV URL e.g. from CKAN
+  # object: data source - CSV URL, e.g. from CKAN
   data <- reactive({
     infile <- input$csv_url
     if (is.null(infile)) { return(NULL) }
     read.table(input$csv_url, sep=",", header=T, stringsAsFactors=T)
   })
 
-  # Define data column for x axis, y axis, groups
+  # UI elements
   output$xcol <- renderUI({
     df <-data()
     if (is.null(df)) return(NULL)
@@ -51,18 +51,22 @@ shinyServer(function(input, output) {
     sliderInput(inputId = "x_extra", label = "X scale padding",
                 min = 0, max = 1, value = 0.15, step = 0.05)
   })
+  # End UI elements
 
-
-
+  # output object: data summary
   output$summary <- renderPrint({ summary(data()) })
-  output$table <- renderDataTable({ data() })
-  output$plot_simple <- renderPlot({
-    df <-data()
-    plot(df[[input$ycol]] ~ df[[input$xcol]],
-         xlab=input$x_label, ylab=input$y_label)
-  })
 
-  # Step 1 - reactive plot object
+  # output object: data table
+  output$table <- renderDataTable({ data() })
+
+#   # output object: a simple plot
+#   output$plot_simple <- renderPlot({
+#     df <-data()
+#     plot(df[[input$ycol]] ~ df[[input$xcol]],
+#          xlab=input$x_label, ylab=input$y_label)
+#   })
+
+  # ggplot object
   plot_ggplot <- reactive(function() {
     df <-data()
 
@@ -74,6 +78,7 @@ shinyServer(function(input, output) {
     x_breaks <- x_min:x_max
     point_size <- 3
     pd <- position_dodge(input$pd)
+
     p <- print(
       ggplot(df, aes_string(x=x_col, y=y_col)) +
         geom_line(position=pd) +
@@ -85,14 +90,14 @@ shinyServer(function(input, output) {
     )
   })
 
-  # Step 2 - output object: rendered plot
+  # output object: rendered plot
   output$plot_ggplot <- renderPlot({
     plot_ggplot()
   })
 
-  # Step 3 - output object: download PDF
+  # output object: download PDF
   output$downloadPdf <- downloadHandler(
-    filename = function() { paste0(input$pdf_filename, '.pdf') },
+    filename = function() { paste0(input$output_filename, '.pdf') },
     content = function(file) {
       pdf(file, height = 5, width = 7);
       print(plot_ggplot());
@@ -100,26 +105,51 @@ shinyServer(function(input, output) {
     }
   )
 
-  # Step 4 - show code
-  output$rcode <- renderText({
-    paste0("df <- read.table('",
-           input$csv_url,
-           "', sep=",", header=T, stringsAsFactors=T)")
-#   "mpa_theme <- theme(
-#   axis.text.x = element_text(size=14),
-#   axis.text.y = element_text(size=14),
-#   axis.title.x=element_text(size=14), # or element_blank(),
-#   axis.title.y=element_text(size=14),
-#   axis.line=element_line(colour="black"),
-#   panel.grid.minor = element_blank(),
-#   panel.grid.major = element_blank(),
-#   panel.border=element_blank(),
-#   panel.background=element_blank(),
-#   legend.justification=c(1,10), legend.position=c(1,10), # Position legend in top right
-#   legend.title = element_blank(),
-#   legend.key = element_blank())"
+  # r code spelled out
+  plot_code <- reactive({
+    print(
+      paste0("df <- read.table('", input$csv_url,
+             "', sep=',', header=T, stringsAsFactors=T)\n\n",
 
-  })
+             "pdf('", input$output_filename,".pdf', height = 5, width = 7);\n\n",
+
+             "ggplot(df, aes_string(x=", input$xcol, ", y=", input$ycol, ")) +\n",
+             "  geom_line(position=position_dodge(", input$pd,")) +\n",
+             "  geom_point(position=position_dodge(", input$pd,"), size=3) +\n",
+             "  ylab(", input$y_label,") +\n",
+             "  xlab(", input$x_label,") +\n",
+             "  scale_x_continuous(limits=x_limits, breaks=x_breaks) +\n",
+             "  theme(\n",
+             "    axis.text.x = element_text(size=14),\n",
+             "    axis.text.y = element_text(size=14),\n",
+             "    axis.title.x=element_text(size=14), # or element_blank(),\n",
+             "    axis.title.y=element_text(size=14),\n",
+             "    axis.line=element_line(colour='black'),\n",
+             "    panel.grid.minor = element_blank(),\n",
+             "    panel.grid.major = element_blank(),\n",
+             "    panel.border=element_blank(),\n",
+             "    panel.background=element_blank(),\n",
+             "    legend.justification=c(1,10),\n",
+             "    legend.position=c(1,10), # Position legend in top right\n",
+             "    legend.title = element_blank(),\n",
+             "    legend.key = element_blank()\n",
+             "  )\n\n",
+
+             "dev.off()\n"
+      ) # /paste
+    ) # /print
+  }) #/reactive
+
+  # output object: rendered R code
+  output$rcode <- renderText({ print(plot_code()) })
+
+  # output object: download R code
+  output$downloadCode <- downloadHandler(
+    filename = function() { paste0(input$output_filename, '.txt') },
+    content = function(file) {
+      writeLines(plot_code(), file)
+    }
+  )
 
 
 
