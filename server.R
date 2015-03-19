@@ -43,6 +43,10 @@ shinyServer(function(input, output) {
   output$plot_title <- renderUI({ textInput("title", "Figure title") })
   output$plot_ylab <- renderUI({ textInput("y_label", "Y axis label") })
   output$plot_xlab <- renderUI({ textInput("x_label", "X axis label") })
+  output$plot_x_breaks <- renderUI({
+    sliderInput(inputId = "max_x_breaks", label = "Number of X axis breaks",
+                min = 0, max = 20, value = 10, step = 1)
+  })
   output$plot_pd <- renderUI({
     sliderInput(inputId = "pd", label = "Position dodge",
                 min = 0, max = 1, value = 0.25, step = 0.05)
@@ -75,7 +79,13 @@ shinyServer(function(input, output) {
     x_min <- min(df[[input$xcol]])
     x_max <- max(df[[input$xcol]])
     x_limits <- c(x_min-input$x_extra, x_max+input$x_extra)
-    x_breaks <- x_min:x_max
+    no_x_breaks <- length(x_min:x_max)
+    if (no_x_breaks < input$max_x_breaks) {
+      step_x_breaks <- 1
+    } else {
+      step_x_breaks <- floor(no_x_breaks / input$max_x_breaks)
+    }
+    x_breaks <- seq(x_min, x_max, step_x_breaks)
     point_size <- 3
     pd <- position_dodge(input$pd)
 
@@ -106,12 +116,28 @@ shinyServer(function(input, output) {
   )
 
   text_instruction <- reactive({
-    if (is.null(input$rcode_url) || input$rcode_url == "") { return(NULL) }
+    if (is.null(input$rcode_url) ||
+          input$rcode_url == "" ||
+          !url.exists(input$rcode_url)) { return(NULL) }
     paste0("## Reproduce the figure:\n# source('", input$rcode_url, "')\n\n")
   })
 
   # r code spelled out
   plot_code <- reactive({
+    df <-data()
+
+    x_col <- input$xcol
+    y_col <- input$ycol
+    x_min <- min(df[[input$xcol]])
+    x_max <- max(df[[input$xcol]])
+
+    no_x_breaks <- length(x_min:x_max)
+    if (no_x_breaks < input$max_x_breaks) {
+      step_x_breaks <- 1
+    } else {
+      step_x_breaks <- floor(no_x_breaks / input$max_x_breaks)
+    }
+
     print(
       paste0(
         text_instruction(),
@@ -121,12 +147,14 @@ shinyServer(function(input, output) {
 
         "pdf('", input$output_filename,".pdf', height = 5, width = 7);\n\n",
 
-        "ggplot(df, aes_string(x=", input$xcol, ", y=", input$ycol, ")) +\n",
+        "ggplot(df, aes_string(x='", input$xcol, "', y='", input$ycol, "')) +\n",
         "  geom_line(position=position_dodge(", input$pd,")) +\n",
         "  geom_point(position=position_dodge(", input$pd,"), size=3) +\n",
-        "  ylab(", input$y_label,") +\n",
-        "  xlab(", input$x_label,") +\n",
-        "  scale_x_continuous(limits=x_limits, breaks=x_breaks) +\n",
+        "  ylab('", input$y_label,"') +\n",
+        "  xlab('", input$x_label,"') +\n",
+        "  scale_x_continuous(limits=c(",
+        x_min-input$x_extra,",",x_max+input$x_extra,
+        "), breaks=seq(", x_min, ",", x_max, ",", step_x_breaks, ") +\n",
         "  theme(\n",
         "    axis.text.x = element_text(size=14),\n",
         "    axis.text.y = element_text(size=14),\n",

@@ -3,6 +3,7 @@ require(ggplot2) || install.packages("ggplot2")
 require(markdown) || install.packages("markdown")
 require(lubridate) || install.packages("lubridate")
 require(qcc) || install.packages("qcc")
+require(RCurl) || install.packages("RCurl")
 
 #' The GGplot2 theme for MPA graphs
 mpa_theme <- theme(axis.text.x = element_text(size=14),

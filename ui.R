@@ -19,8 +19,9 @@ shinyUI(
           uiOutput("plot_title"),
           uiOutput("plot_ylab"),
           uiOutput("plot_xlab"),
-          uiOutput("plot_pd"),
-          uiOutput("plot_x_extra")
+          uiOutput("plot_x_breaks"),
+          uiOutput("plot_x_extra"),
+          uiOutput("plot_pd")
         ), # /wellPanel
 
         wellPanel(
