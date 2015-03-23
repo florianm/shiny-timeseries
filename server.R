@@ -4,7 +4,7 @@ shinyServer(function(input, output) {
   data <- reactive({
     infile <- input$csv_url
     if (is.null(infile)) { return(NULL) }
-    read.table(input$csv_url, sep=",", header=T, stringsAsFactors=T)
+    read.table(input$csv_url, sep=",", header=T, stringsAsFactors=F)
   })
 
   # UI elements
@@ -154,7 +154,7 @@ shinyServer(function(input, output) {
         "  xlab('", input$x_label,"') +\n",
         "  scale_x_continuous(limits=c(",
         x_min-input$x_extra,",",x_max+input$x_extra,
-        "), breaks=seq(", x_min, ",", x_max, ",", step_x_breaks, ") +\n",
+        "), breaks=seq(", x_min, ",", x_max, ",", step_x_breaks, ")) +\n",
         "  theme(\n",
         "    axis.text.x = element_text(size=14),\n",
         "    axis.text.y = element_text(size=14),\n",
