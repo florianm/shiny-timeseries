@@ -92,3 +92,42 @@ qcc(d[cal0:cal1,],
     nsigmas=n_sigma
 )
 
+
+
+
+# In situ seawater temp
+lubridate::parse_date_time(d$date.time, orders=date_formats)
+x = "2014-12-31T23:55:59+0800"
+lubridate::parse_date_time(x, orders=c("YmdHMSz"), tz="Australia/Perth")
+
+csv_url <- "http://internal-data.dpaw.wa.gov.au/dataset/82992b4c-18df-4282-a290-d5fac9a53171/resource/ac8c3854-bc81-4141-a0a9-acfdfb6fdbed/download/aimsnambungbaywatertemperature11may2012to16feb2015.csv"
+
+cc <- c(
+  "date.time" = "POSIXct",
+  "datetime" = "POSIXct",
+  "date" = "POSIXct",
+  "time" = "POSIXt",
+  "year" = "POSIXct"
+  )
+
+header = read.csv(csv_url, sep=",", header=T, nrows=1)
+ccl = names(header)
+d <- read.csv(csv_url, sep=",", header=T, colClasses=)
+
+source("global.R")
+d <- as.data.frame(lapply(read.csv(csv_url, sep=",", header=T, stringsAsFactors=T),
+    function(x) {if(is.factor(x)){x <- lubridate::parse_date_time(x, orders=ldo, tz=ldz)}; x}))
+
+
+sapply(items, function(x){paste0(x, " (", class(d[[x]]), ")")})
+
+summary(d)
+lapply(d, class)
+str(d)
+
+min(d$date.time)
+is.POSIXct(d$date.time)
+
+# scale_x_datetime(labels=date_format("%Y-%m"), breaks="1 year", minor_breaks="3 months")
+library(scales)
+ggplot(d, aes(x=d$date.time, y=d$temp1)) + geom_point() + scale_x_datetime(labels=date_format("%Y-%m"), breaks="1 year", minor_breaks="3 months")

@@ -40,20 +40,25 @@ shinyUI(
 
         tabsetPanel(type = "tabs",
 
-                    tabPanel("Inspect Data",
-                             h3("Summary"),
+                    tabPanel("Inspect",
                              p("Which columns would you like to plot?"),
-                             verbatimTextOutput("summary"),
-                             h3("Preview"),
+                             p(paste0("The X axis should be a valid datetime or",
+                                      " date. Supported ISO 8601 date formats ",
+                                      "are: Y-m-d (H:M:S (z)).")),
+                             verbatimTextOutput("summary")
+                    ),
+
+                    tabPanel("Preview",
+                             p("Preview the actual data."),
                              dataTableOutput("table")
                     ),
 
-                    tabPanel("Figure",
-#                              h3("Simple Plot"),
-#                              plotOutput("plot_simple"),
-#                              h3("GGplot2 Figure"),
+                    tabPanel("Visualise",
+                             # h3("Simple Plot"),
+                             # plotOutput("plot_simple"),
+                             # h3("GGplot2 Figure"),
                              plotOutput("plot_ggplot"),
-                              verbatimTextOutput("rcode")
+                             verbatimTextOutput("rcode")
 
                     )
         ) # /tabsetPanel
