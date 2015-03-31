@@ -4,20 +4,7 @@ shinyServer(function(input, output) {
   data <- reactive({
     infile <- input$csv_url
     if (is.null(infile)) { return(NULL) }
-    #d <- read.table(input$csv_url, sep=",", header=T, stringsAsFactors=T)
-    # convert date factors into dates
-    # could also test for column names
-    d <- as.data.frame(
-      lapply(
-        read.table(input$csv_url, sep=",", header=T, stringsAsFactors=T),
-        function(x) {
-          if(is.factor(x)){
-            x <- lubridate::parse_date_time(x, orders=ldo, tz=ldz)
-          }
-          x
-        }
-      )
-    )
+    d <- shlorp_data(input$csv_url)
   })
 
   # UI elements
@@ -154,7 +141,7 @@ shinyServer(function(input, output) {
     paste0("## Reproduce the figure:\n# source('", input$rcode_url, "')\n\n")
   })
 
-  # r code spelled out
+  # R code spelled out
   plot_code <- reactive({
     df <-data()
 
@@ -163,30 +150,14 @@ shinyServer(function(input, output) {
     x_min <- min(df[[input$xcol]])
     x_max <- max(df[[input$xcol]])
 
-
-    # Reading the data with a whiff of magic
-    data_read_text <- paste0(
-      "df <- as.data.frame(lapply(\n",
-      "read.table('", input$csv_url, "', sep=',', header=T, stringsAsFactors=T),\n",
-      "function(x) {\n",
-      "  if(is.factor(x)){x <- lubridate::parse_date_time(x,\n",
-      " orders=", ldo, ", tz=", ldz, ")};x}\n)\n)\n"
-    )
-
     # The X axis scale depends on class: date or numeric
     if (is.POSIXct(input$xcol)) {
-      x_scale_text  <- paste0(
-        "  scale_x_datetime(labels=date_format(\"%Y-%m\"),\n",
-        "    breaks=\"1 year\",\n    minor_breaks=\"3 months\"),\n"
-      )
+      x_scale_text  <- "  scale_x_datetime(labels=date_format('%Y-%m'),breaks='1 year', minor_breaks='3 months'),\n"
     } else {
       # A sensible number of x axis breaks
       no_x_breaks <- length(x_min:x_max)
-      if (no_x_breaks < input$max_x_breaks) {
-        step_x_breaks <- 1
-      } else {
-        step_x_breaks <- floor(no_x_breaks / input$max_x_breaks)
-      }
+      if (no_x_breaks < input$max_x_breaks) { step_x_breaks <- 1 } else {
+        step_x_breaks <- floor(no_x_breaks / input$max_x_breaks) }
 
       x_scale_text  <- paste0(
         "  scale_x_continuous(limits=c(",
@@ -195,32 +166,11 @@ shinyServer(function(input, output) {
       )
     }
 
-    # Theme
-    theme_text <- paste0(
-      "  theme(\n",
-      "    axis.text.x = element_text(size=14),\n",
-      "    axis.text.y = element_text(size=14),\n",
-      "    axis.title.x=element_text(size=14), # or element_blank(),\n",
-      "    axis.title.y=element_text(size=14),\n",
-      "    axis.line=element_line(colour='black'),\n",
-      "    panel.grid.minor = element_blank(),\n",
-      "    panel.grid.major = element_blank(),\n",
-      "    panel.border=element_blank(),\n",
-      "    panel.background=element_blank(),\n",
-      "    legend.justification=c(1,10),\n",
-      "    legend.position=c(1,10), # Position legend in top right\n",
-      "    legend.title = element_blank(),\n",
-      "    legend.key = element_blank()\n",
-      "  )\n",
-    )
-
     # Putting it together: the code to produce the figure
     print(
       paste0(
         text_instruction(),
-
-
-        data_read_text,
+        shlorp_data_text(input$csv_url),
         "pdf('", input$output_filename,".pdf', height = 5, width = 7);\n\n",
         "ggplot(df, aes_string(x='", input$xcol, "', y='", input$ycol, "')) +\n",
         "  geom_line(position=position_dodge(", input$pd,")) +\n",
@@ -228,10 +178,8 @@ shinyServer(function(input, output) {
         "  ylab('", input$y_label,"') +\n",
         "  xlab('", input$x_label,"') +\n",
         x_scale_text,
-        theme_text,
-        "\n",
-
-        "dev.off()\n"
+        mpa_theme_text,
+        "\ndev.off()\n"
       ) # /paste
     ) # /print
   }) #/reactive
@@ -242,11 +190,7 @@ shinyServer(function(input, output) {
   # output object: download R code
   output$downloadCode <- downloadHandler(
     filename = function() { paste0(input$output_filename, '.txt') },
-    content = function(file) {
-      writeLines(plot_code(), file)
-    }
+    content = function(file) { writeLines(plot_code(), file) }
   )
-
-
 
 })
