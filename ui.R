@@ -8,8 +8,8 @@ shinyUI(
           h4("Load Data"),
           # textInput("csv_url", "Paste CSV URL"),
           selectizeInput('csv_url', 'Select dataset', choices = test_datasets),
-          uiOutput("xcol"),
           uiOutput("ycol"),
+          uiOutput("xcol"),
           uiOutput("has_groups"),
           uiOutput("gcol")
         ), # /wellPanel

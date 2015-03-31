@@ -131,3 +131,33 @@ is.POSIXct(d$date.time)
 # scale_x_datetime(labels=date_format("%Y-%m"), breaks="1 year", minor_breaks="3 months")
 library(scales)
 ggplot(d, aes(x=d$date.time, y=d$temp1)) + geom_point() + scale_x_datetime(labels=date_format("%Y-%m"), breaks="1 year", minor_breaks="3 months")
+
+
+df <- as.data.frame(
+  lapply(read.table('http://internal-data.dpaw.wa.gov.au/dataset/82992b4c-18df-4282-a290-d5fac9a53171/resource/ac8c3854-bc81-4141-a0a9-acfdfb6fdbed/download/aimsnambungbaywatertemperature11may2012to16feb2015.csv', sep=',', header=T, stringsAsFactors=T),
+         function(x) {
+           if(is.factor(x)){x <- lubridate::parse_date_time(x, orders=c('YmdHMSz', 'YmdHMS','Ymd'), tz='Australia/Perth')};x}))
+
+pdf('figure.pdf', height = 5, width = 7);
+ggplot(df, aes_string(x='date.time', y='date')) +
+  geom_line(position=position_dodge(0.25)) +
+  geom_point(position=position_dodge(0.25), size=3)
+  ylab('') +
+  xlab('') +
+  scale_x_continuous(limits=c(2012-05-11 12:29:59,2015-02-16 08:30:00), breaks=seq(2012-05-11 12:30:00,2015-02-16 08:30:00,8733599)) +
+  theme(
+    axis.text.x = element_text(size=14),
+    axis.text.y = element_text(size=14),
+    axis.title.x=element_text(size=14), # or element_blank(),
+    axis.title.y=element_text(size=14),
+    axis.line=element_line(colour='black'),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.border=element_blank(),
+    panel.background=element_blank(),
+    legend.justification=c(1,10),
+    legend.position=c(1,10), # Position legend in top right
+    legend.title = element_blank(),
+    legend.key = element_blank()
+  )
+

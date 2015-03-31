@@ -1,28 +1,51 @@
+source("global.R")
 shinyServer(function(input, output) {
 
   # object: data source - CSV URL, e.g. from CKAN
   data <- reactive({
-    infile <- input$csv_url
-    if (is.null(infile)) { return(NULL) }
-    d <- shlorp_data(input$csv_url)
+    if (is.null(input$csv_url)) return(NULL)
+
+    d <- as.data.frame(
+      lapply(
+        read.csv(input$csv_url, sep=",", header=T, stringsAsFactors=T),
+        function(x) {
+          if(is.factor(x)){
+            x <- lubridate::parse_date_time(x,
+                                            orders=c("YmdHMSz", "YmdHMS","Ymd"),
+                                            tz=ldz)
+          }
+          x
+        }
+      )
+    )
+
   })
+
 
   # UI elements
-  output$xcol <- renderUI({
-    df <-data()
-    if (is.null(df)) return(NULL)
-    items=names(df)
-    names(items)= sapply(items, function(x){paste0(x, " (", class(df[[x]]), ")")})
-    selectInput("xcol", "Select X Variable (date)", items)
-  })
-
   output$ycol <- renderUI({
     df <-data()
     if (is.null(df)) return(NULL)
     items=names(df)
-    names(items)= sapply(items, function(x){paste0(x, " (", class(df[[x]]), ")")})
-    selectInput("ycol", "Select Y Variable (value)", items, selected=items[2])
+    names(items)= sapply(items,
+                         function(x){paste0(x, " (", class(df[[x]])[[1]], ")")})
+    selectInput("ycol",
+                "Choose independent variable (y axis, numeric)",
+                items,
+                selected=items[2])
   })
+
+  output$xcol <- renderUI({
+    df <-data()
+    if (is.null(df)) return(NULL)
+    items=names(df)
+    names(items)= sapply(items,
+                         function(x){paste0(x, " (", class(df[[x]])[[1]], ")")})
+    selectInput("xcol",
+                "Choose dependent Variable (x axis, date)",
+                items)
+  })
+
 
   output$has_groups <- renderUI({
     checkboxInput(inputId = "has_groups",
@@ -83,7 +106,7 @@ shinyServer(function(input, output) {
     point_size <- 3
     pd <- position_dodge(input$pd)
 
-    if(is.POSIXct(input$xcol)) {
+    if (is.POSIXct(x_col)) {
       p <- print(
         ggplot(df, aes_string(x=x_col, y=y_col)) +
           geom_line(position=pd) +
@@ -91,7 +114,7 @@ shinyServer(function(input, output) {
           ylab(input$y_label) +
           xlab(input$x_label) +
           scale_x_datetime(labels=date_format("%Y-%m"),
-                           breaks="1 year",
+                           breaks=date_breaks("1 year"),
                            minor_breaks="3 months"),
         mpa_theme
       )
@@ -112,7 +135,7 @@ shinyServer(function(input, output) {
           geom_point(position=pd, size=point_size) +
           ylab(input$y_label) +
           xlab(input$x_label) +
-          scale_x_continuous(limits=x_limits, breaks=x_breaks) +
+#           scale_x_continuous(limits=x_limits, breaks=x_breaks) +
           mpa_theme
       )
     }
@@ -147,31 +170,33 @@ shinyServer(function(input, output) {
 
     x_col <- input$xcol
     y_col <- input$ycol
-    x_min <- min(df[[input$xcol]])
-    x_max <- max(df[[input$xcol]])
+    x_min <- min(df[[x_col]])
+    x_max <- max(df[[x_col]])
 
     # The X axis scale depends on class: date or numeric
-    if (is.POSIXct(input$xcol)) {
-      x_scale_text  <- "  scale_x_datetime(labels=date_format('%Y-%m'),breaks='1 year', minor_breaks='3 months'),\n"
+    if (is.POSIXct(x_col)) {
+      x_scale_text  <- paste0("  scale_x_datetime(labels=date_format('%Y-%m'),",
+                              "breaks='1 year', minor_breaks='3 months'),\n")
     } else {
       # A sensible number of x axis breaks
       no_x_breaks <- length(x_min:x_max)
       if (no_x_breaks < input$max_x_breaks) { step_x_breaks <- 1 } else {
-        step_x_breaks <- floor(no_x_breaks / input$max_x_breaks) }
+        step_x_breaks <- floor(no_x_breaks / input$max_x_breaks) - 1 }
 
       x_scale_text  <- paste0(
-        "  scale_x_continuous(limits=c(",
-        x_min-input$x_extra, ",", x_max+input$x_extra,
+        "  scale_x_continuous(limits=c(", x_min-input$x_extra, ",", x_max+input$x_extra,
         "), breaks=seq(", x_min, ",", x_max, ",", step_x_breaks, ")) +\n"
       )
     }
 
     # Putting it together: the code to produce the figure
-    print(
-      paste0(
+    paste0(
         text_instruction(),
-        shlorp_data_text(input$csv_url),
-        "pdf('", input$output_filename,".pdf', height = 5, width = 7);\n\n",
+        "df <- as.data.frame(\n  lapply(read.table('",
+        input$csv_url, "', sep=',', header=T, stringsAsFactors=T),\n",
+        "  function(x) {if(is.factor(x)){x <- lubridate::parse_date_time(",
+        "x, orders=c('YmdHMSz', 'YmdHMS','Ymd'), tz='Australia/Perth')};x}))\n\n",
+        "pdf('", input$output_filename,".pdf', height = 5, width = 7);\n",
         "ggplot(df, aes_string(x='", input$xcol, "', y='", input$ycol, "')) +\n",
         "  geom_line(position=position_dodge(", input$pd,")) +\n",
         "  geom_point(position=position_dodge(", input$pd,"), size=3) +\n",
@@ -181,11 +206,10 @@ shinyServer(function(input, output) {
         mpa_theme_text,
         "\ndev.off()\n"
       ) # /paste
-    ) # /print
   }) #/reactive
 
   # output object: rendered R code
-  output$rcode <- renderText({ print(plot_code()) })
+  output$rcode <- renderText({ plot_code() })
 
   # output object: download R code
   output$downloadCode <- downloadHandler(

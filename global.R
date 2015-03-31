@@ -21,55 +21,37 @@ test_datasets <- c(
 ldo <- c("YmdHMSz", "YmdHMS","Ymd", "Y")
 ldz <- "Australia/Perth"
 
-shlorp_data <- function(csv_url, ldo=ldo, ldz=ldz){
-  as.data.frame(
-    lapply(read.table(csv_url, sep=",", header=T, stringsAsFactors=T),
-           function(x) {if(is.factor(x)){
-             lubridate::parse_date_time(x, orders=ldo, tz=ldz)}
-           }
-    )
-  )
-}
 
-shlorp_data_text <- function(csv_url, ldo=ldo, ldz=ldz) {
-  paste("df <- as.data.frame(lapply(",
-        "read.table('", csv_url, "', sep=',', header=T, stringsAsFactors=T),",
-        "function(x) {\n  if(is.factor(x)){x <- lubridate::parse_date_time(x,",
-        " orders=", ldo, ", tz=", ldz, ")};x}))",
-        sep="\n"
-  )
-}
+#------------------------------------------------------------------------------#
+# The GGplot2 theme for MPA graphs
+mpa_theme <- theme(axis.text.x = element_text(size=14),
+                   axis.text.y = element_text(size=14),
+                   axis.title.x=element_text(size=14), # or element_blank(),
+                   axis.title.y=element_text(size=14),
+                   axis.line=element_line(colour="black"),
+                   panel.grid.minor = element_blank(),
+                   panel.grid.major = element_blank(),
+                   panel.border=element_blank(),
+                   panel.background=element_blank(),
+                   legend.justification=c(1,10), legend.position=c(1,10), # Position legend in top right
+                   legend.title = element_blank(),
+                   legend.key = element_blank())
 
-  #------------------------------------------------------------------------------#
-  # The GGplot2 theme for MPA graphs
-  mpa_theme <- theme(axis.text.x = element_text(size=14),
-                     axis.text.y = element_text(size=14),
-                     axis.title.x=element_text(size=14), # or element_blank(),
-                     axis.title.y=element_text(size=14),
-                     axis.line=element_line(colour="black"),
-                     panel.grid.minor = element_blank(),
-                     panel.grid.major = element_blank(),
-                     panel.border=element_blank(),
-                     panel.background=element_blank(),
-                     legend.justification=c(1,10), legend.position=c(1,10), # Position legend in top right
-                     legend.title = element_blank(),
-                     legend.key = element_blank())
-
-  mpa_theme_text <- paste(
-    "  theme(",
-    "    axis.text.x = element_text(size=14),",
-    "    axis.text.y = element_text(size=14),",
-    "    axis.title.x=element_text(size=14), # or element_blank(),",
-    "    axis.title.y=element_text(size=14),",
-    "    axis.line=element_line(colour='black'),",
-    "    panel.grid.minor = element_blank(),",
-    "    panel.grid.major = element_blank(),",
-    "    panel.border=element_blank(),",
-    "    panel.background=element_blank(),",
-    "    legend.justification=c(1,10),",
-    "    legend.position=c(1,10), # Position legend in top right",
-    "    legend.title = element_blank(),",
-    "    legend.key = element_blank()",
-    "  )",
-    sep="\n"
-  )
+mpa_theme_text <- paste(
+  "  theme(",
+  "    axis.text.x = element_text(size=14),",
+  "    axis.text.y = element_text(size=14),",
+  "    axis.title.x=element_text(size=14), # or element_blank(),",
+  "    axis.title.y=element_text(size=14),",
+  "    axis.line=element_line(colour='black'),",
+  "    panel.grid.minor = element_blank(),",
+  "    panel.grid.major = element_blank(),",
+  "    panel.border=element_blank(),",
+  "    panel.background=element_blank(),",
+  "    legend.justification=c(1,10),",
+  "    legend.position=c(1,10), # Position legend in top right",
+  "    legend.title = element_blank(),",
+  "    legend.key = element_blank()",
+  "  )",
+  sep="\n"
+)
