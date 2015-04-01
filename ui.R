@@ -21,7 +21,9 @@ shinyUI(
           uiOutput("plot_xlab"),
 #           uiOutput("plot_x_breaks"),
 #           uiOutput("plot_x_extra"),
-          uiOutput("plot_pd")
+          uiOutput("plot_pd"),
+          uiOutput("add_moving_average")
+
         ), # /wellPanel
 
         wellPanel(
@@ -40,16 +42,14 @@ shinyUI(
         tabsetPanel(type = "tabs",
 
                     tabPanel("Inspect",
-                             p("Which columns would you like to plot?"),
-                             p(paste0("The X axis should be a valid datetime or",
+                             h1("Select columns to plot"),
+                             p("The Y axis must be a numeric variable."),
+                             p(paste0("The X axis must be a valid datetime or",
                                       " date. Supported ISO 8601 date formats ",
                                       "are: Y-m-d (H:M:S (z)).")),
+                             p("Have a look at the data below, and choose Y and X variables accordingly."),
                              verbatimTextOutput("overview"),
-                             verbatimTextOutput("summary")
-                    ),
-
-                    tabPanel("Preview",
-                             p("Preview the actual data."),
+                             verbatimTextOutput("summary"),
                              dataTableOutput("table")
                     ),
 

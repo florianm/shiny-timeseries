@@ -101,6 +101,11 @@ shinyServer(function(input, output) {
     sliderInput(inputId = "x_extra", label = "X scale padding",
                 min = 0, max = 1, value = 0.15, step = 0.05)
   })
+  output$add_moving_average <- renderUI({
+    checkboxInput(inputId = "add_moving_average",
+                  label = strong("Add moving average"),
+                  value = FALSE)
+  })
   # End UI elements------------------------------------------------------------#
 
   # output object: data summary
@@ -108,17 +113,16 @@ shinyServer(function(input, output) {
   output$summary <- renderPrint({summary(data())}, width=120)
 
   # output object: data table
-  output$table <- renderDataTable({ data() })
+  output$table <- renderDataTable({data()}, options=list(iDisplayLength=10))
 
   # object: ggplot
   plot_ggplot <- reactive({
     df <-data()
-    point_size <- 3
     pd <- position_dodge(input$pd)
 
-    ggplot(df, aes_string(x=input$xcol, y=input$ycol)) +
+    ggplt <- ggplot(df, aes_string(x=input$xcol, y=input$ycol)) +
       geom_line(position=pd) +
-      geom_point(position=pd, size=point_size) +
+      geom_point(position=pd, size=2) +
       ggtitle(input$title) +
       ylab(input$y_label) +
       xlab(input$x_label) +
@@ -126,6 +130,10 @@ shinyServer(function(input, output) {
                        breaks=date_breaks("1 year"),
                        minor_breaks="3 months") +
       mpa_theme
+
+    if (input$add_moving_average == T){ggplt <- ggplt + geom_smooth(size=2)}
+
+    ggplt
 
   })
 
@@ -152,6 +160,10 @@ shinyServer(function(input, output) {
 
   # R code spelled out
   plot_code <- reactive({
+    if (input$add_moving_average == T){
+      smooth_text <- "geom_smooth(size=2) +\n"
+    } else {smooth_text <- ""}
+
     paste0(
       text_instruction(),
       "require(ggplot2) || install.packages('ggplot2')\n",
@@ -164,17 +176,18 @@ shinyServer(function(input, output) {
       "pdf('", input$output_filename,".pdf', height = 5, width = 7);\n",
       "ggplot(df, aes_string(x='", input$xcol, "', y='", input$ycol, "')) +\n",
       "  geom_line(position=position_dodge(", input$pd,")) +\n",
-      "  geom_point(position=position_dodge(", input$pd,"), size=3) +\n",
+      "  geom_point(position=position_dodge(", input$pd,"), size=2) +\n",
       "  ylab('", input$y_label,"') +\n",
       "  xlab('", input$x_label,"') +\n",
       "  scale_x_datetime(labels=date_format('%Y-%m'), breaks='1 year', minor_breaks='3 months') +\n",
+      smooth_text,
       mpa_theme_text,
       "\ndev.off()\n"
     ) # /paste
   }) #/reactive
 
   # output object: rendered R code
-  output$rcode <- renderText({ plot_code() })
+  output$rcode <- renderText({plot_code()})
 
   # output object: download R code
   output$downloadCode <- downloadHandler(

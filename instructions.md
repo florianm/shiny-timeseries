@@ -4,8 +4,12 @@ on our [data catalogue](http://internal-data.dpaw.wa.gov.au/).
 
 The data and figures are used in Marine Science's 
 [annual MPA reporting](http://internal-data.dpaw.wa.gov.au/dataset/mpa-reports).
-Using this application saves authors some leg work, while providing an agreed on
-quality and standard for analysis and outputs, and also provides reproducible work flows.
+Using this application has multiple benefits:
+
+* it saves the authors some leg work,
+* it provides graphs in the format and quality required for MPA reporting,
+* it drives the clean-up and standardisation of data in the catalogue, and
+* it makes reporting transparent and reproducible by saving the work flow as R code.
 
 # How can I use it?
 
