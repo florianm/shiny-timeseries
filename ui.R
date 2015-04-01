@@ -57,7 +57,12 @@ shinyUI(
                              plotOutput("plot_ggplot"),
                              verbatimTextOutput("rcode")
 
+                    ),
+
+                    tabPanel("Help",
+                             includeMarkdown("instructions.md")
                     )
+
         ) # /tabsetPanel
 
       ) # /mainPanel
