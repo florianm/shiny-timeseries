@@ -89,22 +89,21 @@ shinyServer(function(input, output) {
 
 
   # ggplot object
-  plot_ggplot <- reactive(function() {
+  plot_ggplot <- reactive({
     df <-data()
     point_size <- 3
     pd <- position_dodge(input$pd)
 
-    p <- print(
-      ggplot(df, aes_string(x=input$xcol, y=input$ycol)) +
-        geom_line(position=pd) +
-        geom_point(position=pd, size=point_size) +
-        ylab(input$y_label) +
-        xlab(input$x_label) +
-        scale_x_date(labels=date_format("%Y-%m"),
-                     breaks=date_breaks("1 year"),
-                     minor_breaks="3 months"),
+    ggplot(df, aes_string(x=input$xcol, y=input$ycol)) +
+      geom_line(position=pd) +
+      geom_point(position=pd, size=point_size) +
+      ggtitle(input$title) +
+      ylab(input$y_label) +
+      xlab(input$x_label) +
+      scale_x_datetime(labels=date_format("%Y-%m"),
+                       breaks=date_breaks("1 year"),
+                       minor_breaks="3 months") +
       mpa_theme
-    )
 
   })
 
