@@ -9,11 +9,7 @@ shinyServer(function(input, output) {
       lapply(
         read.csv(input$csv_url, sep=",", header=T, stringsAsFactors=T),
         function(x) {
-          if(is.factor(x)){
-            x <- lubridate::parse_date_time(x,
-                                            orders=c("YmdHMSz", "YmdHMS","Ymd"),
-                                            tz=ldz)
-          }
+          if(is.factor(x)){x <- lubridate::parse_date_time(x, ldo, tz=ldz)}
           x
         }
       )
@@ -27,8 +23,7 @@ shinyServer(function(input, output) {
     df <-data()
     if (is.null(df)) return(NULL)
     items=names(df)
-    names(items)= sapply(items,
-                         function(x){paste0(x, " (", class(df[[x]])[[1]], ")")})
+    names(items)= items #sapply(items, function(x){paste0(x, " (", class(df[[x]])[[1]], ")")})
     selectInput("ycol",
                 "Choose independent variable (y axis, numeric)",
                 items,
@@ -39,8 +34,7 @@ shinyServer(function(input, output) {
     df <-data()
     if (is.null(df)) return(NULL)
     items=names(df)
-    names(items)= sapply(items,
-                         function(x){paste0(x, " (", class(df[[x]])[[1]], ")")})
+    names(items)= items #sapply(items, function(x){paste0(x, " (", class(df[[x]])[[1]], ")")})
     selectInput("xcol",
                 "Choose dependent Variable (x axis, date)",
                 items)
@@ -83,8 +77,6 @@ shinyServer(function(input, output) {
   # output object: data summary
   output$summary <- renderPrint({ str(data()) })
 
-
-
   # output object: data table
   output$table <- renderDataTable({ data() })
 
@@ -101,8 +93,7 @@ shinyServer(function(input, output) {
     df <-data()
     x_col <- input$xcol
     y_col <- input$ycol
-    x_min <- min(df[[input$xcol]])
-    x_max <- max(df[[input$xcol]])
+
     point_size <- 3
     pd <- position_dodge(input$pd)
 
@@ -120,6 +111,8 @@ shinyServer(function(input, output) {
       )
 
     } else {
+      x_min <- min(df[[x_col]])
+      x_max <- max(df[[y_col]])
       x_limits <- c(x_min-input$x_extra, x_max+input$x_extra)
       no_x_breaks <- length(x_min:x_max)
       if (no_x_breaks < input$max_x_breaks) {
@@ -170,32 +163,33 @@ shinyServer(function(input, output) {
 
     x_col <- input$xcol
     y_col <- input$ycol
-    x_min <- min(df[[x_col]])
-    x_max <- max(df[[x_col]])
 
-    # The X axis scale depends on class: date or numeric
-    if (is.POSIXct(x_col)) {
-      x_scale_text  <- paste0("  scale_x_datetime(labels=date_format('%Y-%m'),",
+#     # The X axis scale depends on class: date or numeric
+#     if (is.POSIXct(x_col)) {
+      x_scale_text  <- paste0("  scale_x_date(labels=date_format('%Y-%m'),",
                               "breaks='1 year', minor_breaks='3 months'),\n")
-    } else {
-      # A sensible number of x axis breaks
-      no_x_breaks <- length(x_min:x_max)
-      if (no_x_breaks < input$max_x_breaks) { step_x_breaks <- 1 } else {
-        step_x_breaks <- floor(no_x_breaks / input$max_x_breaks) - 1 }
 
-      x_scale_text  <- paste0(
-        "  scale_x_continuous(limits=c(", x_min-input$x_extra, ",", x_max+input$x_extra,
-        "), breaks=seq(", x_min, ",", x_max, ",", step_x_breaks, ")) +\n"
-      )
-    }
+#     } else {
+#       x_min <- min(df[[x_col]])
+#       x_max <- max(df[[x_col]])
+#       # A sensible number of x axis breaks
+#       no_x_breaks <- length(x_min:x_max)
+#       if (no_x_breaks < input$max_x_breaks) { step_x_breaks <- 1 } else {
+#         step_x_breaks <- floor(no_x_breaks / input$max_x_breaks) - 1 }
+#
+#       x_scale_text  <- paste0(
+#         "  scale_x_continuous(limits=c(", x_min-input$x_extra, ",", x_max+input$x_extra,
+#         "), breaks=seq(", x_min, ",", x_max, ",", step_x_breaks, ")) +\n"
+#       )
+#     }
 
     # Putting it together: the code to produce the figure
     paste0(
         text_instruction(),
-        "df <- as.data.frame(\n  lapply(read.table('",
+        "df <- as.data.frame(lapply(\n  read.table('",
         input$csv_url, "', sep=',', header=T, stringsAsFactors=T),\n",
         "  function(x) {if(is.factor(x)){x <- lubridate::parse_date_time(",
-        "x, orders=c('YmdHMSz', 'YmdHMS','Ymd'), tz='Australia/Perth')};x}))\n\n",
+        "x, c('YmdHMSz', 'YmdHMS','Ymd','dmY'), tz='Australia/Perth')};x}))\n\n",
         "pdf('", input$output_filename,".pdf', height = 5, width = 7);\n",
         "ggplot(df, aes_string(x='", input$xcol, "', y='", input$ycol, "')) +\n",
         "  geom_line(position=position_dodge(", input$pd,")) +\n",

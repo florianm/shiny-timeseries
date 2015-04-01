@@ -161,3 +161,8 @@ ggplot(df, aes_string(x='date.time', y='date')) +
     legend.key = element_blank()
   )
 
+df <- as.data.frame(
+  lapply(read.table('http://internal-data.dpaw.wa.gov.au/dataset/bda97642-6377-40b7-89dd-85a599204466/resource/f7d03d06-78a1-4597-a3e5-164caa5554d3/download/simpinsitutemp.csv', sep=',', header=T, stringsAsFactors=T),
+         function(x) {if(is.factor(x)){x <- lubridate::parse_date_time(x, orders=c('YmdHMSz', 'YmdHMS','Ymd','dmY'), tz='Australia/Perth')};x}))
+
+
