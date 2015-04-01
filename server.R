@@ -91,47 +91,20 @@ shinyServer(function(input, output) {
   # ggplot object
   plot_ggplot <- reactive(function() {
     df <-data()
-    x_col <- input$xcol
-    y_col <- input$ycol
-
     point_size <- 3
     pd <- position_dodge(input$pd)
 
-    if (is.POSIXct(x_col)) {
-      p <- print(
-        ggplot(df, aes_string(x=x_col, y=y_col)) +
-          geom_line(position=pd) +
-          geom_point(position=pd, size=point_size) +
-          ylab(input$y_label) +
-          xlab(input$x_label) +
-          scale_x_datetime(labels=date_format("%Y-%m"),
-                           breaks=date_breaks("1 year"),
-                           minor_breaks="3 months"),
-        mpa_theme
-      )
-
-    } else {
-      x_min <- min(df[[x_col]])
-      x_max <- max(df[[y_col]])
-      x_limits <- c(x_min-input$x_extra, x_max+input$x_extra)
-      no_x_breaks <- length(x_min:x_max)
-      if (no_x_breaks < input$max_x_breaks) {
-        step_x_breaks <- 1
-      } else {
-        step_x_breaks <- floor(no_x_breaks / input$max_x_breaks)
-      }
-      x_breaks <- seq(x_min, x_max, step_x_breaks)
-
-      p <- print(
-        ggplot(df, aes_string(x=x_col, y=y_col)) +
-          geom_line(position=pd) +
-          geom_point(position=pd, size=point_size) +
-          ylab(input$y_label) +
-          xlab(input$x_label) +
-#           scale_x_continuous(limits=x_limits, breaks=x_breaks) +
-          mpa_theme
-      )
-    }
+    p <- print(
+      ggplot(df, aes_string(x=input$xcol, y=input$ycol)) +
+        geom_line(position=pd) +
+        geom_point(position=pd, size=point_size) +
+        ylab(input$y_label) +
+        xlab(input$x_label) +
+        scale_x_date(labels=date_format("%Y-%m"),
+                     breaks=date_breaks("1 year"),
+                     minor_breaks="3 months"),
+      mpa_theme
+    )
 
   })
 
@@ -161,45 +134,23 @@ shinyServer(function(input, output) {
   plot_code <- reactive({
     df <-data()
 
-    x_col <- input$xcol
-    y_col <- input$ycol
-
-#     # The X axis scale depends on class: date or numeric
-#     if (is.POSIXct(x_col)) {
-      x_scale_text  <- paste0("  scale_x_date(labels=date_format('%Y-%m'),",
-                              "breaks='1 year', minor_breaks='3 months'),\n")
-
-#     } else {
-#       x_min <- min(df[[x_col]])
-#       x_max <- max(df[[x_col]])
-#       # A sensible number of x axis breaks
-#       no_x_breaks <- length(x_min:x_max)
-#       if (no_x_breaks < input$max_x_breaks) { step_x_breaks <- 1 } else {
-#         step_x_breaks <- floor(no_x_breaks / input$max_x_breaks) - 1 }
-#
-#       x_scale_text  <- paste0(
-#         "  scale_x_continuous(limits=c(", x_min-input$x_extra, ",", x_max+input$x_extra,
-#         "), breaks=seq(", x_min, ",", x_max, ",", step_x_breaks, ")) +\n"
-#       )
-#     }
-
-    # Putting it together: the code to produce the figure
     paste0(
-        text_instruction(),
-        "df <- as.data.frame(lapply(\n  read.table('",
-        input$csv_url, "', sep=',', header=T, stringsAsFactors=T),\n",
-        "  function(x) {if(is.factor(x)){x <- lubridate::parse_date_time(",
-        "x, c('YmdHMSz', 'YmdHMS','Ymd','dmY'), tz='Australia/Perth')};x}))\n\n",
-        "pdf('", input$output_filename,".pdf', height = 5, width = 7);\n",
-        "ggplot(df, aes_string(x='", input$xcol, "', y='", input$ycol, "')) +\n",
-        "  geom_line(position=position_dodge(", input$pd,")) +\n",
-        "  geom_point(position=position_dodge(", input$pd,"), size=3) +\n",
-        "  ylab('", input$y_label,"') +\n",
-        "  xlab('", input$x_label,"') +\n",
-        x_scale_text,
-        mpa_theme_text,
-        "\ndev.off()\n"
-      ) # /paste
+      text_instruction(),
+      "df <- as.data.frame(lapply(\n  read.table('",
+      input$csv_url, "', sep=',', header=T, stringsAsFactors=T),\n",
+      "  function(x) {if(is.factor(x)){x <- lubridate::parse_date_time(",
+      "x, c('YmdHMSz', 'YmdHMS','Ymd','dmY'), tz='Australia/Perth')};x}))\n\n",
+      "pdf('", input$output_filename,".pdf', height = 5, width = 7);\n",
+      "ggplot(df, aes_string(x='", input$xcol, "', y='", input$ycol, "')) +\n",
+      "  geom_line(position=position_dodge(", input$pd,")) +\n",
+      "  geom_point(position=position_dodge(", input$pd,"), size=3) +\n",
+      "  ylab('", input$y_label,"') +\n",
+      "  xlab('", input$x_label,"') +\n",
+      "  scale_x_date(labels=date_format('%Y-%m'), breaks='1 year', minor_breaks='3 months'),\n",
+      mpa_theme_text,
+      "\ndev.off()\n"
+    ) # /paste
+
   }) #/reactive
 
   # output object: rendered R code
