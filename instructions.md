@@ -28,7 +28,9 @@ conforming to a particular standard:
 * You must be authorised to update the data catalogue.
 
 # What's the required format and structure for the CSV file?
-Generally, the [Marine Science standards for observational datasets](https://confluence.dpaw.wa.gov.au/display/MSIM/Quality+requirements+and+format+standards+for+observational+datasets) apply.
+Generally, the [Marine Science standards for observational datasets](
+https://confluence.dpaw.wa.gov.au/display/MSIM/Quality+requirements+and+format+standards+for+observational+datasets) apply - especially for file and 
+variable names.
 
 For univariate time series, the CSV **must** have:
 

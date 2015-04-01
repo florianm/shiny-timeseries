@@ -6,6 +6,7 @@ shinyServer(function(input, output) {
   #
   # Query CKAN for packages with tag "format_csv_ts"
   output$ckan_package <- renderUI({
+
     d <- ckan_json(api_call="tag_show", oid="format_csv_ts")
     if (is.null(d)) return(NULL)
     items <- setNames(
