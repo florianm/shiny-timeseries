@@ -6,12 +6,8 @@ shinyUI(
 
         wellPanel(
           h4("Load Data"),
-          # textInput("csv_url", "Paste CSV URL"),
-          # selectizeInput('csv_url', 'Select CSV', choices = test_datasets),
-
           uiOutput("ckan_package"),
           uiOutput("ckan_csv"),
-
           uiOutput("ycol"),
           uiOutput("xcol"),
           uiOutput("has_groups"),
@@ -31,8 +27,8 @@ shinyUI(
         wellPanel(
           h4("Save Figure"),
           textInput("api_key", "Paste CKAN API key"),
-          uiOutput("ckan_pdf", "Select PDF destination"),
-          uiOutput("ckan_r", "Select R code destination"),
+          uiOutput("ckan_pdf"),
+          uiOutput("ckan_r"),
           textInput("output_filename", "File name", value="figure"),
           downloadButton("downloadPdf", "Download PDF"),
           downloadButton("downloadCode", "Download R Code")
@@ -48,6 +44,7 @@ shinyUI(
                              p(paste0("The X axis should be a valid datetime or",
                                       " date. Supported ISO 8601 date formats ",
                                       "are: Y-m-d (H:M:S (z)).")),
+                             verbatimTextOutput("overview"),
                              verbatimTextOutput("summary")
                     ),
 
@@ -57,9 +54,6 @@ shinyUI(
                     ),
 
                     tabPanel("Visualise",
-                             # h3("Simple Plot"),
-                             # plotOutput("plot_simple"),
-                             # h3("GGplot2 Figure"),
                              plotOutput("plot_ggplot"),
                              verbatimTextOutput("rcode")
 

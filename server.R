@@ -1,17 +1,9 @@
 source("global.R")
 shinyServer(function(input, output) {
 
-  # object: data source - CSV URL, e.g. from CKAN
-  #   data <- reactive({
-  #     if (is.null(input$csv_url)) return(NULL)
-  #     d <- as.data.frame(lapply(
-  #         read.csv(input$csv_url, sep=",", header=T, stringsAsFactors=T),
-  #         function(x) {if(is.factor(x)){x <- lubridate::parse_date_time(x, ldo, tz=ldz)};x}
-  #     ))
-  #   })
-
-
-  # UI elements
+  #----------------------------------------------------------------------------#
+  # Select data
+  #
   # Query CKAN for packages with tag "format_csv_ts"
   output$ckan_package <- renderUI({
     d <- ckan_json(api_call="tag_show", oid="format_csv_ts")
@@ -39,12 +31,12 @@ shinyServer(function(input, output) {
 
   # Let user select PDF resource to overwrite with new figure
   output$ckan_pdf <- renderUI({
-    selectInput("ckan_pdf", "Choose data CSV", ckan_resources())
+    selectInput("ckan_pdf", "Choose PDF CSV", ckan_resources())
   })
 
   # Let user select R code resource to overwrite with R code for figure
   output$ckan_r <- renderUI({
-    selectInput("ckan_r", "Choose data CSV", ckan_resources())
+    selectInput("ckan_r", "Choose R CSV", ckan_resources())
   })
 
   # Load data from selected CSV resource
@@ -55,7 +47,12 @@ shinyServer(function(input, output) {
       function(x) {if(is.factor(x)){x <- lubridate::parse_date_time(x, ldo, tz=ldz)};x}
     ))
   })
+  # data is now loaded
+  #----------------------------------------------------------------------------#
 
+  #----------------------------------------------------------------------------#
+  # Inspect and select data to plot
+  #
   # Get data columns as named list
   datavars <- reactive({
     df <-data()
@@ -68,7 +65,7 @@ shinyServer(function(input, output) {
   output$ycol <- renderUI({selectInput("ycol", "Choose Y variable", datavars())})
 
   # Let user select independent variable for x axis
-  output$xcol <- renderUI({selectInput("xcol", "Choose X Variable", datavars())})
+  output$xcol <- renderUI({selectInput("xcol", "Choose X variable", datavars())})
 
   # Let user choose whether to draw multiple data series
   output$has_groups <- renderUI({
@@ -80,10 +77,13 @@ shinyServer(function(input, output) {
   # Let user select factor variable for multiple data series
   output$gcol <- renderUI({
     conditionalPanel(condition = "input.has_groups == true",
-                     selectInput("gcol", "Select Group Variable", datavars())
+                     selectInput("gcol", "Choose grouping variable", datavars())
     )
   })
 
+  #----------------------------------------------------------------------------#
+  # Plotting parameters
+  #
   # User submitted parameters for plot
   output$plot_title <- renderUI({ textInput("title", "Figure title") })
   output$plot_ylab <- renderUI({ textInput("y_label", "Y axis label") })
@@ -100,21 +100,14 @@ shinyServer(function(input, output) {
     sliderInput(inputId = "x_extra", label = "X scale padding",
                 min = 0, max = 1, value = 0.15, step = 0.05)
   })
-  # End UI elements
+  # End UI elements------------------------------------------------------------#
 
   # output object: data summary
-  output$summary <- renderPrint({ str(data()) })
+  output$overview <- renderPrint({str(data())}, width=120)
+  output$summary <- renderPrint({summary(data())}, width=120)
 
   # output object: data table
   output$table <- renderDataTable({ data() })
-
-  #   # output object: a simple plot
-  #   output$plot_simple <- renderPlot({
-  #     df <-data()
-  #     plot(df[[input$ycol]] ~ df[[input$xcol]],
-  #          xlab=input$x_label, ylab=input$y_label)
-  #   })
-
 
   # object: ggplot
   plot_ggplot <- reactive({
