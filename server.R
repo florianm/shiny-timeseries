@@ -25,19 +25,45 @@ shinyServer(function(input, output) {
     items
   })
 
+  resource_dict <- reactive ({
+    d <- ckan_json(api_call="package_show", oid=input$ckan_package)
+    if (is.null(d)) return(NULL)
+    d$resources
+  })
+
+  csv_resources <- reactive ({
+    r <- resource_dict()
+    rr = Filter(function(r){length(r)>0 && r[["format"]] == "CSV"},r)
+    items <- setNames(lapply(rr, function(x){x$url}), lapply(rr, function(x){x$name}))
+    items
+  })
+
+  pdf_resources <- reactive ({
+    r <- resource_dict()
+    rr = Filter(function(r){length(r)>0 && r[["format"]] == "PDF"},r)
+    items <- setNames(lapply(rr, function(x){x$url}), lapply(rr, function(x){x$name}))
+    items
+  })
+
+  txt_resources <- reactive ({
+    r <- resource_dict()
+    rr = Filter(function(r){length(r)>0 && r[["format"]] == "TXT"},r)
+    items <- setNames(lapply(rr, function(x){x$url}), lapply(rr, function(x){x$name}))
+    items
+  })
   # Let user select CSV resource to read data from
   output$ckan_csv <- renderUI({
-    selectInput("ckan_csv", "Choose data CSV", ckan_resources())
+    selectInput("ckan_csv", "Choose data CSV", csv_resources())
   })
 
   # Let user select PDF resource to overwrite with new figure
   output$ckan_pdf <- renderUI({
-    selectInput("ckan_pdf", "Choose PDF CSV", ckan_resources())
+    selectInput("ckan_pdf", "Choose PDF CSV", pdf_resources())
   })
 
   # Let user select R code resource to overwrite with R code for figure
   output$ckan_r <- renderUI({
-    selectInput("ckan_r", "Choose R CSV", ckan_resources())
+    selectInput("ckan_r", "Choose R CSV", txt_resources())
   })
 
   # Load data from selected CSV resource

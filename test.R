@@ -168,6 +168,5 @@ df <- as.data.frame(
 
 
 d = ckan_json(api_call="tag_show", oid="format_csv_ts")
-lapply(d$packages, function(x){x=c(x$title, x$id);x})
 
 items <- setNames(lapply(d$packages, function(x){x$id}), lapply(d$packages, function(x){x$title}))
