@@ -7,7 +7,11 @@ shinyUI(
         wellPanel(
           h4("Load Data"),
           # textInput("csv_url", "Paste CSV URL"),
-          selectizeInput('csv_url', 'Select dataset', choices = test_datasets),
+          # selectizeInput('csv_url', 'Select CSV', choices = test_datasets),
+
+          uiOutput("ckan_package"),
+          uiOutput("ckan_csv"),
+
           uiOutput("ycol"),
           uiOutput("xcol"),
           uiOutput("has_groups"),
@@ -27,12 +31,11 @@ shinyUI(
         wellPanel(
           h4("Save Figure"),
           textInput("api_key", "Paste CKAN API key"),
-          textInput("pdf_url", "Paste PDF URL"),
-          textInput("rcode_url", "Paste R Code URL"),
+          uiOutput("ckan_pdf", "Select PDF destination"),
+          uiOutput("ckan_r", "Select R code destination"),
           textInput("output_filename", "File name", value="figure"),
           downloadButton("downloadPdf", "Download PDF"),
-          downloadButton("downloadCode", "Download R Code"),
-          p("Coming: upload PDF and R code to CKAN (above URLs)")
+          downloadButton("downloadCode", "Download R Code")
         ) # /wellPanel
 
       ), # /sidebarPanel

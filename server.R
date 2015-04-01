@@ -2,61 +2,89 @@ source("global.R")
 shinyServer(function(input, output) {
 
   # object: data source - CSV URL, e.g. from CKAN
-  data <- reactive({
-    if (is.null(input$csv_url)) return(NULL)
-
-    d <- as.data.frame(
-      lapply(
-        read.csv(input$csv_url, sep=",", header=T, stringsAsFactors=T),
-        function(x) {
-          if(is.factor(x)){x <- lubridate::parse_date_time(x, ldo, tz=ldz)}
-          x
-        }
-      )
-    )
-
-  })
+  #   data <- reactive({
+  #     if (is.null(input$csv_url)) return(NULL)
+  #     d <- as.data.frame(lapply(
+  #         read.csv(input$csv_url, sep=",", header=T, stringsAsFactors=T),
+  #         function(x) {if(is.factor(x)){x <- lubridate::parse_date_time(x, ldo, tz=ldz)};x}
+  #     ))
+  #   })
 
 
   # UI elements
-  output$ycol <- renderUI({
-    df <-data()
-    if (is.null(df)) return(NULL)
-    items=names(df)
-    names(items)= items #sapply(items, function(x){paste0(x, " (", class(df[[x]])[[1]], ")")})
-    selectInput("ycol",
-                "Choose independent variable (y axis, numeric)",
-                items,
-                selected=items[2])
+  # Query CKAN for packages with tag "format_csv_ts"
+  output$ckan_package <- renderUI({
+    d <- ckan_json(api_call="tag_show", oid="format_csv_ts")
+    if (is.null(d)) return(NULL)
+    items <- setNames(
+      lapply(d$packages, function(x){x$id}),
+      lapply(d$packages, function(x){x$title}))
+    selectInput("ckan_package", "Choose dataset", items)
   })
 
-  output$xcol <- renderUI({
-    df <-data()
-    if (is.null(df)) return(NULL)
-    items=names(df)
-    names(items)= items #sapply(items, function(x){paste0(x, " (", class(df[[x]])[[1]], ")")})
-    selectInput("xcol",
-                "Choose dependent Variable (x axis, date)",
-                items)
+  # Get resources of CKAN
+  ckan_resources <- reactive ({
+    d <- ckan_json(api_call="package_show", oid=input$ckan_package)
+    if (is.null(d)) return(NULL)
+    items <- setNames(
+      lapply(d$resources, function(x){x$url}),
+      lapply(d$resources, function(x){x$name}))
+    items
   })
 
+  # Let user select CSV resource to read data from
+  output$ckan_csv <- renderUI({
+    selectInput("ckan_csv", "Choose data CSV", ckan_resources())
+  })
 
+  # Let user select PDF resource to overwrite with new figure
+  output$ckan_pdf <- renderUI({
+    selectInput("ckan_pdf", "Choose data CSV", ckan_resources())
+  })
+
+  # Let user select R code resource to overwrite with R code for figure
+  output$ckan_r <- renderUI({
+    selectInput("ckan_r", "Choose data CSV", ckan_resources())
+  })
+
+  # Load data from selected CSV resource
+  data <- reactive({
+    if (is.null(input$ckan_csv)) return(NULL)
+    d <- as.data.frame(lapply(
+      read.csv(input$ckan_csv, sep=",", header=T, stringsAsFactors=T),
+      function(x) {if(is.factor(x)){x <- lubridate::parse_date_time(x, ldo, tz=ldz)};x}
+    ))
+  })
+
+  # Get data columns as named list
+  datavars <- reactive({
+    df <-data()
+    if (is.null(df)) return(NULL)
+    items=setNames(names(df), names(df))
+    items
+  })
+
+  # Let user select responding variable for y axis
+  output$ycol <- renderUI({selectInput("ycol", "Choose Y variable", datavars())})
+
+  # Let user select independent variable for x axis
+  output$xcol <- renderUI({selectInput("xcol", "Choose X Variable", datavars())})
+
+  # Let user choose whether to draw multiple data series
   output$has_groups <- renderUI({
     checkboxInput(inputId = "has_groups",
                   label = strong("Group data by a factor"),
                   value = FALSE)
   })
 
+  # Let user select factor variable for multiple data series
   output$gcol <- renderUI({
-    df <-data()
-    if (is.null(df)) return(NULL)
-    items=names(df)
-    names(items)=items
     conditionalPanel(condition = "input.has_groups == true",
-                     selectInput("gcol", "Select Group Variable", items)
+                     selectInput("gcol", "Select Group Variable", datavars())
     )
   })
 
+  # User submitted parameters for plot
   output$plot_title <- renderUI({ textInput("title", "Figure title") })
   output$plot_ylab <- renderUI({ textInput("y_label", "Y axis label") })
   output$plot_xlab <- renderUI({ textInput("x_label", "X axis label") })
@@ -88,7 +116,7 @@ shinyServer(function(input, output) {
   #   })
 
 
-  # ggplot object
+  # object: ggplot
   plot_ggplot <- reactive({
     df <-data()
     point_size <- 3
@@ -108,13 +136,11 @@ shinyServer(function(input, output) {
   })
 
   # output object: rendered plot
-  output$plot_ggplot <- renderPlot({
-    plot_ggplot()
-  })
+  output$plot_ggplot <- renderPlot({plot_ggplot()})
 
   # output object: download PDF
   output$downloadPdf <- downloadHandler(
-    filename = function() { paste0(input$output_filename, '.pdf') },
+    filename = function() {paste0(input$output_filename, '.pdf')},
     content = function(file) {
       pdf(file, height = 5, width = 7);
       print(plot_ggplot());
@@ -122,21 +148,23 @@ shinyServer(function(input, output) {
     }
   )
 
+  # Output object: instruction dependent on valid ckan_r url
   text_instruction <- reactive({
-    if (is.null(input$rcode_url) ||
-          input$rcode_url == "" ||
-          !url.exists(input$rcode_url)) { return(NULL) }
-    paste0("## Reproduce the figure:\n# source('", input$rcode_url, "')\n\n")
+    if (is.null(input$ckan_r) ||
+          input$ckan_r == "" ||
+          !url.exists(input$ckan_r)) { return(NULL) }
+    paste0("## Reproduce the figure:\n# source('", input$ckan_r, "')\n\n")
   })
 
   # R code spelled out
   plot_code <- reactive({
-    df <-data()
-
     paste0(
       text_instruction(),
+      "require(ggplot2) || install.packages('ggplot2')\n",
+      "require(lubridate) || install.packages('lubridate')\n",
+      "require(scales) || install.packages('scales')\n",
       "df <- as.data.frame(lapply(\n  read.table('",
-      input$csv_url, "', sep=',', header=T, stringsAsFactors=T),\n",
+      input$ckan_csv, "', sep=',', header=T, stringsAsFactors=T),\n",
       "  function(x) {if(is.factor(x)){x <- lubridate::parse_date_time(",
       "x, c('YmdHMSz', 'YmdHMS','Ymd','dmY'), tz='Australia/Perth')};x}))\n\n",
       "pdf('", input$output_filename,".pdf', height = 5, width = 7);\n",
@@ -145,11 +173,10 @@ shinyServer(function(input, output) {
       "  geom_point(position=position_dodge(", input$pd,"), size=3) +\n",
       "  ylab('", input$y_label,"') +\n",
       "  xlab('", input$x_label,"') +\n",
-      "  scale_x_date(labels=date_format('%Y-%m'), breaks='1 year', minor_breaks='3 months'),\n",
+      "  scale_x_datetime(labels=date_format('%Y-%m'), breaks='1 year', minor_breaks='3 months') +\n",
       mpa_theme_text,
       "\ndev.off()\n"
     ) # /paste
-
   }) #/reactive
 
   # output object: rendered R code
@@ -157,8 +184,8 @@ shinyServer(function(input, output) {
 
   # output object: download R code
   output$downloadCode <- downloadHandler(
-    filename = function() { paste0(input$output_filename, '.txt') },
-    content = function(file) { writeLines(plot_code(), file) }
+    filename = function() {paste0(input$output_filename, '.txt')},
+    content = function(file) {writeLines(plot_code(), file)}
   )
 
 })

@@ -5,6 +5,7 @@ require(lubridate) || install.packages("lubridate")
 require(qcc) || install.packages("qcc")
 require(RCurl) || install.packages("RCurl")
 require(scales) || install.packages("scales")
+require(rjson) || install.packages("rjson")
 
 #------------------------------------------------------------------------------#
 # Data loading
@@ -56,3 +57,37 @@ mpa_theme_text <- paste(
   "  )",
   sep="\n"
 )
+
+#------------------------------------------------------------------------------#
+# CKAN API helpers
+
+#' Return a CKAN API call as JSON dict
+#'
+#' Sends a request to a CKAN API, e.g.:
+#' http://my.ckan.instance.com/api/3/action/package_show?id=MY-DATASET-ID-abcdef-12345
+#'
+#' @param oid the alphanumeric CKAN object (here: dataset) ID or slug, default: ""
+#' @param base_url the base url of the CKAN instance,
+#'   default: "http://internal-data.dpaw.wa.gov.au/"
+#' @param api_call the path to the API function, default: "package_show"
+#' @param debug a flag to toggle debug output to the console, default: FALSE
+#' @return a JSON dict of dataset details (name, notes, tags etc.)
+#' @import rjson
+#' @export
+ckan_json <- function(
+  base_url="http://internal-data.dpaw.wa.gov.au/",
+  api_call="package_show",
+  oid='',
+  debug=FALSE){
+
+  url = paste(base_url, "api/3/action/", api_call, "?id=", oid, sep="")
+  if (debug) {print(paste("CKAN API URL to be called:", url))}
+
+  if (url.exists(base_url)) {
+    out <- rjson::fromJSON(getURLContent(url), unexpected.escape="skip")$result
+  } else {
+    out <- NULL
+  }
+
+  out
+}
