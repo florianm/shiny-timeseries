@@ -55,36 +55,18 @@ qcc(d[cal0:cal1,],
     nsigmas=n_sigma
 )
 
-
-
-
-# In situ seawater temp
-lubridate::parse_date_time(d$date.time, orders=date_formats)
-x = "2014-12-31T23:55:59+0800"
-lubridate::parse_date_time(x, orders=c("YmdHMSz"), tz="Australia/Perth")
-
-csv_url <- "http://internal-data.dpaw.wa.gov.au/dataset/82992b4c-18df-4282-a290-d5fac9a53171/resource/ac8c3854-bc81-4141-a0a9-acfdfb6fdbed/download/aimsnambungbaywatertemperature11may2012to16feb2015.csv"
-
-cc <- c(
-  "date.time" = "POSIXct",
-  "datetime" = "POSIXct",
-  "date" = "POSIXct",
-  "time" = "POSIXt",
-  "year" = "POSIXct"
-  )
-
-header = read.csv(csv_url, sep=",", header=T, nrows=1)
-ccl = names(header)
-d <- read.csv(csv_url, sep=",", header=T, colClasses=)
-
+# Data cleaning
+# Asset in situ seawater temperature
 source("global.R")
+url <- "http://internal-data.dpaw.wa.gov.au/dataset/258537e3-7ea3-40e6-ae73-db0fd02b19a3/resource/054e1c99-0b26-4af7-837c-7a053bdd1e81/download/rsmpinsitutemp.csv"
+filename <- "datarsmpinsitutemp.csv"
+d <- get_data(url)
+summary(d)
+lapply(d, class)
+dplyr::rename(d, Date=date)
 
-df <- as.data.frame(
-  lapply(read.table('http://internal-data.dpaw.wa.gov.au/dataset/c3802293-be1a-4060-be1e-02e881cd7b19/resource/b44b811c-d46d-40e9-99d5-c198a264dbd2/download/jbmpinvertebrate2013.csv', sep=',', header=T, stringsAsFactors=T),
-         function(x) {if(is.factor(x)){x <- lubridate::parse_date_time(x, orders=c('YmdHMSz', 'YmdHMS','Ymd','dmY'), tz='Australia/Perth')};x}))
+d2 <- tidyr::gather(d[1:4], "site", "temperature", 2:4)
+summary(d2)
+lapply(d2, class)
+write.table(d2, file=filename, sep=",", row.names=F, col.names=T, quote=T)
 
-s <- summary(df)
-cl <- lapply(df, class)
-
-d = ckan_json(api_call="tag_show", oid="format_csv_ts")
-items <- setNames(lapply(d$packages, function(x){x$id}), lapply(d$packages, function(x){x$title}))

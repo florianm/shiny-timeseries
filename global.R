@@ -1,41 +1,85 @@
+#' Library imports, helper functions, global variables
+
 library(shiny)
-require(ggplot2) || install.packages("ggplot2")
+
+# rendering
 require(markdown) || install.packages("markdown")
-require(lubridate) || install.packages("lubridate")
+
+# plotting
+require(ggplot2) || install.packages("ggplot2")
 require(qcc) || install.packages("qcc")
-require(RCurl) || install.packages("RCurl")
 require(scales) || install.packages("scales")
+
+# web
+require(RCurl) || install.packages("RCurl")
 require(rjson) || install.packages("rjson")
+
+# utilities
+require(lubridate) || install.packages("lubridate")
+# require(tidyr) || install.packages("tidyr")
+# require(dplyr) || install.packages("dplyr")
+
 
 #------------------------------------------------------------------------------#
 # Data loading
 
-# Selected time series datasets
-test_datasets <- c(
-  "SIMP In Situ Water Temp" = "http://internal-data.dpaw.wa.gov.au/dataset/bda97642-6377-40b7-89dd-85a599204466/resource/f7d03d06-78a1-4597-a3e5-164caa5554d3/download/simpinsitutemp.csv",
-  "JMP In Situ Water Temp" = "http://internal-data.dpaw.wa.gov.au/dataset/82992b4c-18df-4282-a290-d5fac9a53171/resource/ac8c3854-bc81-4141-a0a9-acfdfb6fdbed/download/aimsnambungbaywatertemperature11may2012to16feb2015.csv",
-  "WNIMP Black Bream avg weight" = "http://internal-data.dpaw.wa.gov.au/dataset/cd754eda-0998-49e0-852a-2ee5d8e3b075/resource/b3a36efe-039b-4a90-96e0-0b90441c14b8/download/wnimpfishingcompetitions.csv",
-  "EMBMP Rainfall" = "http://internal-data.dpaw.wa.gov.au/dataset/0f86add2-eb6d-4ba9-bd9d-2f5590c005cd/resource/4ed57506-12c7-4702-a11f-fc0c90bf0d16/download/IDCJAC0001004068Data1.csv"
-)
+#' Load CSV data from a URL and guess variable classes
+#'
+#' Reads numbers as numeric
+#' Reads strings as date if matching an ISO8601 date format, else as factor
+#' Will result in either numeric, POSIXct, or string/factor classes
+#'
+#' Date is parsed with lubridate::parse_date_time
+#'
+#' @param url A valid URL to a CSV file
+#' @param ldo Lubridate date orders, default: "YmdHMSz", "YmdHMS","Ymd","dmY"
+#' @param ltz Lubridate time zone, default: "Australia/Perth"
+get_data <- function(url,
+                     ldo=c("YmdHMSz", "YmdHMS","Ymd","dmY"),
+                     ltz="Australia/Perth"){
+  as.data.frame(
+    lapply(
+      read.table(url, sep=',', header=T, stringsAsFactors=T),
+      function(x) {
+        if(is.factor(x)){
+          try(
+            if(is.Date(as.Date(x))){
+              x <- lubridate::parse_date_time(x, orders=ldo, tz=ltz)
+            }
+          )
+        }
+        x
+      }))
+}
 
-# Possible date formats and timezone for lubridate::parse_date_time
-ldo <- c("YmdHMSz", "YmdHMS","Ymd","dmY")
-ldz <- "Australia/Perth"
-
+#' From CKAN package$resources loaded as R list, return items matching format_string
+#'
+#' @param res_list A CKAN package$resources JSON dict, loaded as R list
+#' @param format_string The desired format, e.g. "CSV", "PDF", "TXT"
+resources_format_filter <- function(res_list, format_string){
+  Filter(
+    function(res_list){
+      length(res_list)>0 && res_list[["format"]] == format_string
+    },
+    res_list
+  )
+}
 
 #------------------------------------------------------------------------------#
 # The GGplot2 theme for MPA graphs
-mpa_theme <- theme(axis.text.x = element_text(size=14),
-                   axis.text.y = element_text(size=14),
-                   axis.title.x=element_text(size=14), # or element_blank(),
-                   axis.title.y=element_text(size=14),
+et14 <- element_text(size=14)
+mpa_theme <- theme(axis.text.x = et14,
+                   axis.text.y = et14,
+                   axis.title.x= et14,
+                   axis.title.y= et14,
                    plot.title = element_text(lineheight=.8, face="bold"),
                    #axis.line=element_line(colour="black"),
                    #panel.grid.minor = element_blank(),
                    #panel.grid.major = element_blank(),
                    #panel.border=element_blank(),
                    #panel.background=element_blank(),
-                   legend.justification=c(1,10), legend.position=c(1,10), # Position legend in top right
+                   legend.justification=c(1,10),
+                   legend.position=c(1,10),
                    legend.title = element_blank(),
                    legend.key = element_blank())
 
@@ -43,13 +87,13 @@ mpa_theme_text <- paste(
   "  theme(",
   "    axis.text.x = element_text(size=14),",
   "    axis.text.y = element_text(size=14),",
-  "    axis.title.x=element_text(size=14), # or element_blank(),",
+  "    axis.title.x=element_text(size=14),",
   "    axis.title.y=element_text(size=14),",
-  "    axis.line=element_line(colour='black'),",
-  "    panel.grid.minor = element_blank(),",
-  "    panel.grid.major = element_blank(),",
-  "    panel.border=element_blank(),",
-  "    panel.background=element_blank(),",
+  #   "    axis.line=element_line(colour='black'),",
+  #   "    panel.grid.minor = element_blank(),",
+  #   "    panel.grid.major = element_blank(),",
+  #   "    panel.border=element_blank(),",
+  #   "    panel.background=element_blank(),",
   "    legend.justification=c(1,10),",
   "    legend.position=c(1,10), # Position legend in top right",
   "    legend.title = element_blank(),",

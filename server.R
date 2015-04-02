@@ -3,10 +3,9 @@ shinyServer(function(input, output) {
 
   #----------------------------------------------------------------------------#
   # Select data
-  #
+
   # Query CKAN for packages with tag "format_csv_ts"
   output$ckan_package <- renderUI({
-
     d <- ckan_json(api_call="tag_show", oid="format_csv_ts")
     if (is.null(d)) return(NULL)
     items <- setNames(
@@ -22,26 +21,23 @@ shinyServer(function(input, output) {
     d$resources
   })
 
-  # Let user select CSV resource to read data from
+  # Let user select CSV from resources
   output$ckan_csv <- renderUI({
-    r <- resource_dict()
-    rr <- Filter(function(r){length(r)>0 && r[["format"]] == "CSV"},r)
+    rr <- resources_format_filter(resource_dict(), "CSV")
     i <- setNames(lapply(rr, function(x){x$url}), lapply(rr, function(x){x$name}))
     selectInput("ckan_csv", "Choose CSV data resource", i)
   })
 
   # Let user select PDF resource to overwrite with new figure
   output$ckan_pdf <- renderUI({
-    r <- resource_dict()
-    rr <- Filter(function(r){length(r)>0 && r[["format"]] == "CSV"},r)
+    rr <- resources_format_filter(resource_dict(), "PDF")
     i <- setNames(lapply(rr, function(x){x$url}), lapply(rr, function(x){x$name}))
     selectInput("ckan_pdf", "Choose PDF graph resource", i)
   })
 
   # Let user select R code resource to overwrite with R code for figure
   output$ckan_r <- renderUI({
-    r <- resource_dict()
-    rr <- Filter(function(r){length(r)>0 && r[["format"]] == "TXT"},r)
+    rr <- resources_format_filter(resource_dict(), "TXT")
     i <- setNames(lapply(rr, function(x){x$url}), lapply(rr, function(x){x$name}))
     selectInput("ckan_r", "Choose R script resource", i)
   })
@@ -49,16 +45,8 @@ shinyServer(function(input, output) {
   # Load data from selected CSV resource, detect date formats
   data <- reactive({
     if (is.null(input$ckan_csv)) return(NULL)
-    d <- as.data.frame(lapply(
-      read.csv(input$ckan_csv, sep=",", header=T, stringsAsFactors=T),
-      function(x) {
-        if(is.factor(x) && is.POSIXct(lubridate::parse_date_time(x, ldo, tz=ldz))){
-          x <- lubridate::parse_date_time(x, ldo, tz=ldz)
-        }
-        x
-      }
-    ))
-  })
+    get_data(input$ckan_csv)
+    })
   # data is now loaded
   #----------------------------------------------------------------------------#
 
@@ -66,25 +54,28 @@ shinyServer(function(input, output) {
   # Inspect and select data to plot
   #
   # Get data columns as named list, all or filtered by class
-  #   datavars <- reactive({
-  #     df <- data()
-  #     if (is.null(df)) return(NULL)
-  #     x <- names(df)
-  #     items=setNames(x,x)
-  #     items
-  #   })
+    datavars <- reactive({
+      df <- data()
+      if (is.null(df)) return(NULL)
+      x <- names(df)
+      items=setNames(x,x)
+      items
+    })
 
   datevars <- reactive({
     df <- data()
     if (is.null(df)) return(NULL)
-    x <- names(df[,sapply(df, is.POSIXct)])
+    # urge to scrape out eyes with rusty spoon intensifies...
+    x = names(Filter(function(x){length(x)==2 && x[[1]]=="POSIXct"},
+                     setNames(sapply(df, class), names(df))))
     setNames(x,x)
   })
 
   numericvars <- reactive({
     df <- data()
     if (is.null(df)) return(NULL)
-    x <- names(df[,sapply(df, is.numeric)])
+    x = names(Filter(function(x){length(x)==1 && x[[1]]=="numeric"},
+                     setNames(sapply(df, class), names(df))))
     setNames(x,x)
   })
 
@@ -96,10 +87,14 @@ shinyServer(function(input, output) {
   })
 
   # Let user select responding variable for y axis
-  output$ycol <- renderUI({selectInput("ycol", "Choose Y variable", numericvars())})
+  output$ycol <- renderUI({
+    selectInput("ycol", "Choose Y variable", numericvars())
+  })
 
   # Let user select independent variable for x axis
-  output$xcol <- renderUI({selectInput("xcol", "Choose X variable", datevars())})
+  output$xcol <- renderUI({
+    selectInput("xcol", "Choose X variable", datevars())
+  })
 
   # Let user choose whether to draw multiple data series
   output$has_groups <- renderUI({
@@ -109,7 +104,7 @@ shinyServer(function(input, output) {
 
   # Let user select factor variable for multiple data series
   output$gcol <- renderUI({
-    conditionalPanel(condition = "input.has_groups == true && !is.null(factorvars())",
+    conditionalPanel(condition = "input.has_groups == true",
                      selectInput("gcol", "Choose grouping variable", factorvars())
     )
   })
@@ -127,7 +122,7 @@ shinyServer(function(input, output) {
   })
   output$plot_pd <- renderUI({
     sliderInput(inputId = "pd", label = "Position dodge",
-                min = 0, max = 1, value = 0.25, step = 0.05)
+                min = 0, max = 1, value = 0, step = 0.05)
   })
   output$plot_x_extra <- renderUI({
     sliderInput(inputId = "x_extra", label = "X scale padding",
@@ -145,7 +140,7 @@ shinyServer(function(input, output) {
   output$summary <- renderPrint({summary(data())}, width=120)
 
   # output object: data table
-  output$table <- renderDataTable({data()}, options=list(iDisplayLength=10))
+  output$table <- renderDataTable({data()}, options=list(pageLength=10))
 
   # object: ggplot
   plot_ggplot <- reactive({
@@ -159,7 +154,7 @@ shinyServer(function(input, output) {
     dateminorbreaks <- "3 months"
 
     # Multiple or single data series
-    if (input$has_groups == TRUE) {
+    if (!is.null(input$gcol) && input$has_groups == TRUE) {
       aesthetic <- aes_string(x=input$xcol, y=input$ycol,
                               group=input$gcol, shape=input$gcol)
     } else {
@@ -170,9 +165,7 @@ shinyServer(function(input, output) {
     ggplt <- ggplot(df, aesthetic) +
       geom_line(position=positiondodge) +
       geom_point(position=positiondodge, size=pointsize) +
-      ggtitle(input$title) +
-      ylab(input$y_label) +
-      xlab(input$x_label) +
+      labs(title=input$title, x=input$x_label, y=input$y_label) +
       scale_x_datetime(labels=date_format(dateformat),
                        breaks=date_breaks(datebreaks),
                        minor_breaks=dateminorbreaks) +
@@ -211,7 +204,7 @@ shinyServer(function(input, output) {
   # R code spelled out
   plot_code <- reactive({
     if (input$add_moving_average == T){
-      smooth_text <- "geom_smooth(size=2) +\n"
+      smooth_text <- "  geom_smooth(size=2) +\n"
     } else {smooth_text <- ""}
 
     paste0(
@@ -227,8 +220,7 @@ shinyServer(function(input, output) {
       "ggplot(df, aes_string(x='", input$xcol, "', y='", input$ycol, "')) +\n",
       "  geom_line(position=position_dodge(", input$pd,")) +\n",
       "  geom_point(position=position_dodge(", input$pd,"), size=2) +\n",
-      "  ylab('", input$y_label,"') +\n",
-      "  xlab('", input$x_label,"') +\n",
+      "  labs(title='",input$title,"', x='",input$x_label,"', y='",input$y_label,"') +\n",
       "  scale_x_datetime(labels=date_format('%Y-%m'), breaks='1 year', minor_breaks='3 months') +\n",
       smooth_text,
       mpa_theme_text,
