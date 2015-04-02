@@ -44,8 +44,8 @@ get_data <- function(url,
         if(is.factor(x)){
             # insert test whether factor x really is a date
             x <- lubridate::parse_date_time(x, orders=ldo, tz=ltz)
-            x
         }
+        x
       }))
 }
 

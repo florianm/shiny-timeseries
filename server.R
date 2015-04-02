@@ -54,13 +54,13 @@ shinyServer(function(input, output) {
   # Inspect and select data to plot
   #
   # Get data columns as named list, all or filtered by class
-    datavars <- reactive({
-      df <- data()
-      if (is.null(df)) return(NULL)
-      x <- names(df)
-      items=setNames(x,x)
-      items
-    })
+#     datavars <- reactive({
+#       df <- data()
+#       if (is.null(df)) return(NULL)
+#       x <- names(df)
+#       items=setNames(x,x)
+#       items
+#     })
 
   datevars <- reactive({
     df <- data()
