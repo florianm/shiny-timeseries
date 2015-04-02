@@ -42,13 +42,10 @@ get_data <- function(url,
       read.table(url, sep=',', header=T, stringsAsFactors=T),
       function(x) {
         if(is.factor(x)){
-          try(
-            if(is.Date(as.Date(x))){
-              x <- lubridate::parse_date_time(x, orders=ldo, tz=ltz)
-            }
-          )
+            # insert test whether factor x really is a date
+            x <- lubridate::parse_date_time(x, orders=ldo, tz=ltz)
+            x
         }
-        x
       }))
 }
 
