@@ -15,9 +15,12 @@ Using this application has multiple benefits:
 
 * Choose a dataset, choose the CSV resource, and inspect / preview the data.
 * Pick a numeric variable for the y axis, and a date variable for the x axis.
-* View the graph in the "visualise" tab, modify graphical parameters.
+* View the graph in the "visualise" tab, modify graphical parameters. 
 * Download the graph as PDF, plus the R code to reproduce the graph as text.
-* Coming soon: paste your API key to upload the PDF graph and R code back to the data catalogue.
+* Coming soon: paste your CKAN API key to upload the PDF graph and R code back to the data catalogue.
+
+Logged in users can find their API key on their profile page (click on your user name).
+If your data doesn't conform to the required standards, the graph may not work.
 
 # How can I use the Time Series Explorer on my own data?
 
@@ -25,11 +28,17 @@ This application will only work with univariate (and optionally grouped) time se
 Your data need to be on the [internal CKAN data catalogue](http://internal-data.dpaw.wa.gov.au/), 
 conforming to a particular standard:
 
-* The CKAN dataset must have a title, description, and carry the tag `format_csv_ts`.
+* The CKAN dataset must carry the tag `format_csv_ts` in order to show up in `Choose dataset`.
+* The dataset title should include the area ("SBMPA" or "Shark Bay Marine Protected Areas" 
+or "Shark Bay MPA") and the asset name (what the data is about, e.g. "Seagrass cover", 
+"Finfish abundance", "Boat registrations"). Type into the select box to filter!
 * The data must be attached to the dataset as CSV resource in the format described below.
 * A figure must be attached to the dataset as PDF resource.
 * A text file must be attached to the dataset as TXT resource.
-* You must be authorised to update the data catalogue.
+* Data (CSV), figure (PDF) and R script (TXT) should have the file names 
+"dataDSTITLE.csv", "figureDSTITLE.pdf", or "scriptDSTITLE.txt", respectively,
+and the resource name "Data/Figure/R Script DSTITLE", where *DSTITLE* should be the dataset title.
+* You must be authorised to update the data catalogue if you want to upload figure and script directly.
 
 # What's the required format and structure for the CSV file?
 Generally, the [Marine Science standards for observational datasets](

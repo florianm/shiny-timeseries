@@ -15,63 +15,48 @@ shinyServer(function(input, output) {
     selectInput("ckan_package", "Choose dataset", items)
   })
 
-  # Get resources of CKAN
-  ckan_resources <- reactive ({
-    d <- ckan_json(api_call="package_show", oid=input$ckan_package)
-    if (is.null(d)) return(NULL)
-    items <- setNames(
-      lapply(d$resources, function(x){x$url}),
-      lapply(d$resources, function(x){x$name}))
-    items
-  })
-
+  # Get resources of CKAN once as dict
   resource_dict <- reactive ({
     d <- ckan_json(api_call="package_show", oid=input$ckan_package)
     if (is.null(d)) return(NULL)
     d$resources
   })
 
-  csv_resources <- reactive ({
-    r <- resource_dict()
-    rr = Filter(function(r){length(r)>0 && r[["format"]] == "CSV"},r)
-    items <- setNames(lapply(rr, function(x){x$url}), lapply(rr, function(x){x$name}))
-    items
-  })
-
-  pdf_resources <- reactive ({
-    r <- resource_dict()
-    rr = Filter(function(r){length(r)>0 && r[["format"]] == "PDF"},r)
-    items <- setNames(lapply(rr, function(x){x$url}), lapply(rr, function(x){x$name}))
-    items
-  })
-
-  txt_resources <- reactive ({
-    r <- resource_dict()
-    rr = Filter(function(r){length(r)>0 && r[["format"]] == "TXT"},r)
-    items <- setNames(lapply(rr, function(x){x$url}), lapply(rr, function(x){x$name}))
-    items
-  })
   # Let user select CSV resource to read data from
   output$ckan_csv <- renderUI({
-    selectInput("ckan_csv", "Choose data CSV", csv_resources())
+    r <- resource_dict()
+    rr <- Filter(function(r){length(r)>0 && r[["format"]] == "CSV"},r)
+    i <- setNames(lapply(rr, function(x){x$url}), lapply(rr, function(x){x$name}))
+    selectInput("ckan_csv", "Choose CSV data resource", i)
   })
 
   # Let user select PDF resource to overwrite with new figure
   output$ckan_pdf <- renderUI({
-    selectInput("ckan_pdf", "Choose PDF CSV", pdf_resources())
+    r <- resource_dict()
+    rr <- Filter(function(r){length(r)>0 && r[["format"]] == "CSV"},r)
+    i <- setNames(lapply(rr, function(x){x$url}), lapply(rr, function(x){x$name}))
+    selectInput("ckan_pdf", "Choose PDF graph resource", i)
   })
 
   # Let user select R code resource to overwrite with R code for figure
   output$ckan_r <- renderUI({
-    selectInput("ckan_r", "Choose R CSV", txt_resources())
+    r <- resource_dict()
+    rr <- Filter(function(r){length(r)>0 && r[["format"]] == "TXT"},r)
+    i <- setNames(lapply(rr, function(x){x$url}), lapply(rr, function(x){x$name}))
+    selectInput("ckan_r", "Choose R script resource", i)
   })
 
-  # Load data from selected CSV resource
+  # Load data from selected CSV resource, detect date formats
   data <- reactive({
     if (is.null(input$ckan_csv)) return(NULL)
     d <- as.data.frame(lapply(
       read.csv(input$ckan_csv, sep=",", header=T, stringsAsFactors=T),
-      function(x) {if(is.factor(x)){x <- lubridate::parse_date_time(x, ldo, tz=ldz)};x}
+      function(x) {
+        if(is.factor(x) && is.POSIXct(lubridate::parse_date_time(x, ldo, tz=ldz))){
+          x <- lubridate::parse_date_time(x, ldo, tz=ldz)
+        }
+        x
+      }
     ))
   })
   # data is now loaded
@@ -80,31 +65,52 @@ shinyServer(function(input, output) {
   #----------------------------------------------------------------------------#
   # Inspect and select data to plot
   #
-  # Get data columns as named list
-  datavars <- reactive({
-    df <-data()
+  # Get data columns as named list, all or filtered by class
+  #   datavars <- reactive({
+  #     df <- data()
+  #     if (is.null(df)) return(NULL)
+  #     x <- names(df)
+  #     items=setNames(x,x)
+  #     items
+  #   })
+
+  datevars <- reactive({
+    df <- data()
     if (is.null(df)) return(NULL)
-    items=setNames(names(df), names(df))
-    items
+    x <- names(df[,sapply(df, is.POSIXct)])
+    setNames(x,x)
+  })
+
+  numericvars <- reactive({
+    df <- data()
+    if (is.null(df)) return(NULL)
+    x <- names(df[,sapply(df, is.numeric)])
+    setNames(x,x)
+  })
+
+  factorvars <- reactive({
+    df <- data()
+    if (is.null(df)) return(NULL)
+    x <- names(df[,sapply(df, is.factor)])
+    setNames(x,x)
   })
 
   # Let user select responding variable for y axis
-  output$ycol <- renderUI({selectInput("ycol", "Choose Y variable", datavars())})
+  output$ycol <- renderUI({selectInput("ycol", "Choose Y variable", numericvars())})
 
   # Let user select independent variable for x axis
-  output$xcol <- renderUI({selectInput("xcol", "Choose X variable", datavars())})
+  output$xcol <- renderUI({selectInput("xcol", "Choose X variable", datevars())})
 
   # Let user choose whether to draw multiple data series
   output$has_groups <- renderUI({
-    checkboxInput(inputId = "has_groups",
-                  label = strong("Group data by a factor"),
-                  value = FALSE)
+    checkboxInput(inputId = "has_groups", value = FALSE,
+                  label = strong("Group data by a factor"))
   })
 
   # Let user select factor variable for multiple data series
   output$gcol <- renderUI({
-    conditionalPanel(condition = "input.has_groups == true",
-                     selectInput("gcol", "Choose grouping variable", datavars())
+    conditionalPanel(condition = "input.has_groups == true && !is.null(factorvars())",
+                     selectInput("gcol", "Choose grouping variable", factorvars())
     )
   })
 
@@ -144,20 +150,38 @@ shinyServer(function(input, output) {
   # object: ggplot
   plot_ggplot <- reactive({
     df <-data()
-    pd <- position_dodge(input$pd)
 
-    ggplt <- ggplot(df, aes_string(x=input$xcol, y=input$ycol)) +
-      geom_line(position=pd) +
-      geom_point(position=pd, size=2) +
+    # Parameters
+    positiondodge <- position_dodge(input$pd)
+    pointsize <- 2
+    dateformat <- "%Y-%m"
+    datebreaks <- "1 year"
+    dateminorbreaks <- "3 months"
+
+    # Multiple or single data series
+    if (input$has_groups == TRUE) {
+      aesthetic <- aes_string(x=input$xcol, y=input$ycol,
+                              group=input$gcol, shape=input$gcol)
+    } else {
+      aesthetic <- aes_string(x=input$xcol, y=input$ycol)
+    }
+
+    # Main plot object
+    ggplt <- ggplot(df, aesthetic) +
+      geom_line(position=positiondodge) +
+      geom_point(position=positiondodge, size=pointsize) +
       ggtitle(input$title) +
       ylab(input$y_label) +
       xlab(input$x_label) +
-      scale_x_datetime(labels=date_format("%Y-%m"),
-                       breaks=date_breaks("1 year"),
-                       minor_breaks="3 months") +
+      scale_x_datetime(labels=date_format(dateformat),
+                       breaks=date_breaks(datebreaks),
+                       minor_breaks=dateminorbreaks) +
       mpa_theme
 
-    if (input$add_moving_average == T){ggplt <- ggplt + geom_smooth(size=2)}
+    # Optional moving average
+    if (input$add_moving_average == T){
+      ggplt <- ggplt + geom_smooth(size=pointsize)
+    }
 
     ggplt
 

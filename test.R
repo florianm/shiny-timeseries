@@ -1,45 +1,8 @@
-#' Test script for timeseries analysis and visualisation
+#' Test script for developing timeseries analysis and visualisation
 #'
 library(ggplot2)
 library(plyr)
 library(lubridate)
-
-#' EMBMP Rainfall
-#' http://internal-data.dpaw.wa.gov.au/dataset/rainfall-relevant-to-eighty-mile-beach-marine-park
-csv_url <- "http://internal-data.dpaw.wa.gov.au/dataset/0f86add2-eb6d-4ba9-bd9d-2f5590c005cd/resource/4ed57506-12c7-4702-a11f-fc0c90bf0d16/download/IDCJAC0001004068Data1.csv"
-d <- read.table(csv_url, sep=",", header=T, stringsAsFactors=T)
-d
-
-
-#' WNIMP Black Bream catch during annual competitions
-#' http://internal-data.dpaw.wa.gov.au/dataset/cd754eda-0998-49e0-852a-2ee5d8e3b075/resource/b3a36efe-039b-4a90-96e0-0b90441c14b8/download/wnimpfishingcompetitions.csv
-Y=read.table("http://internal-data.dpaw.wa.gov.au/dataset/cd754eda-0998-49e0-852a-2ee5d8e3b075/resource/b3a36efe-039b-4a90-96e0-0b90441c14b8/download/wnimpfishingcompetitions.csv",sep=",",header=TRUE)
-
-# pdf("wnimp-fishing_competitions.pdf", width=7, height=5)
-
-pd=position_dodge(0.25)
-colnames(Y)
-ggplot(Y, aes(x=year, y=weight)) +
-  geom_line(position=pd) +
-  geom_point(position=pd, size=3) +
-  xlab("Year") +
-  ylab("Average weight (g)") +
-  scale_x_continuous(limits=c(min(Y$year-0.15), max(Y$year+0.15)), breaks=min(Y$year):max(Y$year)) +
-  theme_bw() +
-  theme(
-    axis.text.x = element_text(size=14),
-    axis.text.y = element_text(size=14),
-    axis.title.x=element_blank(),
-    axis.title.y=element_text(size=14),
-    axis.line=element_line(colour="black"),
-    panel.grid.minor = element_blank(),
-    panel.grid.major = element_blank(),
-    panel.border=element_blank(),
-    panel.background=element_blank(),
-    legend.justification=c(1,10), legend.position=c(1,10), # Position legend in top right
-    legend.title = element_blank(),
-    legend.key = element_blank())
-# dev.off()
 
 
 #' QCC plots
@@ -115,58 +78,13 @@ ccl = names(header)
 d <- read.csv(csv_url, sep=",", header=T, colClasses=)
 
 source("global.R")
-d <- as.data.frame(lapply(read.csv(csv_url, sep=",", header=T, stringsAsFactors=T),
-    function(x) {if(is.factor(x)){x <- lubridate::parse_date_time(x, orders=ldo, tz=ldz)}; x}))
-
-
-sapply(items, function(x){paste0(x, " (", class(d[[x]]), ")")})
-
-summary(d)
-lapply(d, class)
-str(d)
-
-min(d$date.time)
-is.POSIXct(d$date.time)
-
-# scale_x_datetime(labels=date_format("%Y-%m"), breaks="1 year", minor_breaks="3 months")
-library(scales)
-ggplot(d, aes(x=d$date.time, y=d$temp1)) + geom_point() + scale_x_datetime(labels=date_format("%Y-%m"), breaks="1 year", minor_breaks="3 months")
-
 
 df <- as.data.frame(
-  lapply(read.table('http://internal-data.dpaw.wa.gov.au/dataset/82992b4c-18df-4282-a290-d5fac9a53171/resource/ac8c3854-bc81-4141-a0a9-acfdfb6fdbed/download/aimsnambungbaywatertemperature11may2012to16feb2015.csv', sep=',', header=T, stringsAsFactors=T),
-         function(x) {
-           if(is.factor(x)){x <- lubridate::parse_date_time(x, orders=c('YmdHMSz', 'YmdHMS','Ymd'), tz='Australia/Perth')};x}))
-
-pdf('figure.pdf', height = 5, width = 7);
-ggplot(df, aes_string(x='date.time', y='date')) +
-  geom_line(position=position_dodge(0.25)) +
-  geom_point(position=position_dodge(0.25), size=3)
-  ylab('') +
-  xlab('') +
-  scale_x_continuous(limits=c(2012-05-11 12:29:59,2015-02-16 08:30:00), breaks=seq(2012-05-11 12:30:00,2015-02-16 08:30:00,8733599)) +
-  theme(
-    axis.text.x = element_text(size=14),
-    axis.text.y = element_text(size=14),
-    axis.title.x=element_text(size=14), # or element_blank(),
-    axis.title.y=element_text(size=14),
-    axis.line=element_line(colour='black'),
-    panel.grid.minor = element_blank(),
-    panel.grid.major = element_blank(),
-    panel.border=element_blank(),
-    panel.background=element_blank(),
-    legend.justification=c(1,10),
-    legend.position=c(1,10), # Position legend in top right
-    legend.title = element_blank(),
-    legend.key = element_blank()
-  )
-
-df <- as.data.frame(
-  lapply(read.table('http://internal-data.dpaw.wa.gov.au/dataset/bda97642-6377-40b7-89dd-85a599204466/resource/f7d03d06-78a1-4597-a3e5-164caa5554d3/download/simpinsitutemp.csv', sep=',', header=T, stringsAsFactors=T),
+  lapply(read.table('http://internal-data.dpaw.wa.gov.au/dataset/c3802293-be1a-4060-be1e-02e881cd7b19/resource/b44b811c-d46d-40e9-99d5-c198a264dbd2/download/jbmpinvertebrate2013.csv', sep=',', header=T, stringsAsFactors=T),
          function(x) {if(is.factor(x)){x <- lubridate::parse_date_time(x, orders=c('YmdHMSz', 'YmdHMS','Ymd','dmY'), tz='Australia/Perth')};x}))
 
-
+s <- summary(df)
+cl <- lapply(df, class)
 
 d = ckan_json(api_call="tag_show", oid="format_csv_ts")
-
 items <- setNames(lapply(d$packages, function(x){x$id}), lapply(d$packages, function(x){x$title}))
