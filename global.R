@@ -26,7 +26,8 @@ require(lubridate) || install.packages("lubridate")
 #' Load CSV data from a URL and guess variable classes
 #'
 #' Reads numbers as numeric
-#' Reads strings as date if matching an ISO8601 date format, else as factor
+#' Reads strings as factor
+#' Converts column with names indicating date format ("Date", "date") to POSIXct
 #' Will result in either numeric, POSIXct, or string/factor classes
 #'
 #' Date is parsed with lubridate::parse_date_time
@@ -34,19 +35,33 @@ require(lubridate) || install.packages("lubridate")
 #' @param url A valid URL to a CSV file
 #' @param ldo Lubridate date orders, default: "YmdHMSz", "YmdHMS","Ymd","dmY"
 #' @param ltz Lubridate time zone, default: "Australia/Perth"
+#' @param dcn Date column names, default: "date", "Date"
 get_data <- function(url,
                      ldo=c("YmdHMSz", "YmdHMS","Ymd","dmY"),
-                     ltz="Australia/Perth"){
-  as.data.frame(
-    lapply(
-      read.table(url, sep=',', header=T, stringsAsFactors=T),
-      function(x) {
-        if(is.factor(x)){
-            # insert test whether factor x really is a date
-            x <- lubridate::parse_date_time(x, orders=ldo, tz=ltz)
-        }
-        x
-      }))
+                     ltz="Australia/Perth",
+                     dcn=c("date", "Date")
+){
+  df <- read.table(url, sep=',', header=T, stringsAsFactors=T)
+
+  # Option 1
+  #   df<- cbind(
+  #     lapply(select(df, matches("[Dd]ate")),
+  #            function(x){x<- lubridate::parse_date_time(x, orders=ldo, tz=ltz)}),
+  #     select(df, -matches("[Dd]ate")))
+
+  cn <- names(df)
+  df[cn %in% dcn] <- lapply(
+    df[cn %in% dcn],
+    function(x){x<- lubridate::parse_date_time(x, orders=ldo, tz=ltz)}
+  )
+
+  # Option 3
+#   for (i in 1:length(cn)){
+#     if (cn[i] %in% dcn){
+#       df[cn[i]] <- lubridate::parse_date_time(df[cn[i]], orders=ldo, tz=ltz)}
+#   }
+
+  df
 }
 
 #' From CKAN package$resources loaded as R list, return items matching format_string
