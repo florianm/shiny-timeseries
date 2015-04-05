@@ -49,6 +49,7 @@ get_data <- function(url,
   #            function(x){x<- lubridate::parse_date_time(x, orders=ldo, tz=ltz)}),
   #     select(df, -matches("[Dd]ate")))
 
+  # Option 2
   cn <- names(df)
   df[cn %in% dcn] <- lapply(
     df[cn %in% dcn],
@@ -90,10 +91,10 @@ mpa_theme <- theme(axis.text.x = et14,
                    #panel.grid.major = element_blank(),
                    #panel.border=element_blank(),
                    #panel.background=element_blank(),
-                   legend.justification=c(1,10),
-                   legend.position=c(1,10),
-                   legend.title = element_blank(),
-                   legend.key = element_blank())
+                   #legend.title = element_blank(),
+                   #legend.key = element_blank(),
+                   legend.position="right"
+                   )
 
 mpa_theme_text <- paste(
   "  theme(",
@@ -106,10 +107,8 @@ mpa_theme_text <- paste(
   #   "    panel.grid.major = element_blank(),",
   #   "    panel.border=element_blank(),",
   #   "    panel.background=element_blank(),",
-  "    legend.justification=c(1,10),",
-  "    legend.position=c(1,10), # Position legend in top right",
-  "    legend.title = element_blank(),",
-  "    legend.key = element_blank()",
+  "    legend.position='right'",
+
   "  )",
   sep="\n"
 )

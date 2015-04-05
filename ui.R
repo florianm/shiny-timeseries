@@ -10,6 +10,7 @@ shinyUI(
           uiOutput("ckan_csv"),
           uiOutput("ycol"),
           uiOutput("xcol"),
+#           uiOutput("fvars"),
           uiOutput("has_groups"),
           uiOutput("gcol")
         ), # /wellPanel

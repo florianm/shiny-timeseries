@@ -46,7 +46,7 @@ shinyServer(function(input, output) {
   data <- reactive({
     if (is.null(input$ckan_csv)) return(NULL)
     get_data(input$ckan_csv)
-    })
+  })
   # data is now loaded
   #----------------------------------------------------------------------------#
 
@@ -54,13 +54,13 @@ shinyServer(function(input, output) {
   # Inspect and select data to plot
   #
   # Get data columns as named list, all or filtered by class
-#     datavars <- reactive({
-#       df <- data()
-#       if (is.null(df)) return(NULL)
-#       x <- names(df)
-#       items=setNames(x,x)
-#       items
-#     })
+  #     datavars <- reactive({
+  #       df <- data()
+  #       if (is.null(df)) return(NULL)
+  #       x <- names(df)
+  #       items=setNames(x,x)
+  #       items
+  #     })
 
   datevars <- reactive({
     df <- data()
@@ -82,9 +82,12 @@ shinyServer(function(input, output) {
   factorvars <- reactive({
     df <- data()
     if (is.null(df)) return(NULL)
-    x <- names(df[,sapply(df, is.factor)])
+    x = names(Filter(function(x){length(x)==1 && x[[1]]=="factor"},
+                     setNames(sapply(df, class), names(df))))
     setNames(x,x)
   })
+
+  output$fvars <- renderPrint({factorvars()})
 
   # Let user select responding variable for y axis
   output$ycol <- renderUI({
@@ -98,8 +101,11 @@ shinyServer(function(input, output) {
 
   # Let user choose whether to draw multiple data series
   output$has_groups <- renderUI({
-    checkboxInput(inputId = "has_groups", value = FALSE,
-                  label = strong("Group data by a factor"))
+    conditionalPanel(
+      condition = "!is.null(factorvars()) && length(factorvars()) > 0",
+      checkboxInput(inputId = "has_groups",
+                    value = FALSE,
+                    label = strong("Group data by a factor")))
   })
 
   # Let user select factor variable for multiple data series
@@ -156,7 +162,7 @@ shinyServer(function(input, output) {
     # Multiple or single data series
     if (!is.null(input$gcol) && input$has_groups == TRUE) {
       aesthetic <- aes_string(x=input$xcol, y=input$ycol,
-                              group=input$gcol, shape=input$gcol)
+            group=input$gcol, shape=input$gcol, col=input$gcol)
     } else {
       aesthetic <- aes_string(x=input$xcol, y=input$ycol)
     }
@@ -203,27 +209,48 @@ shinyServer(function(input, output) {
 
   # R code spelled out
   plot_code <- reactive({
+
+    # Optional moving average
     if (input$add_moving_average == T){
       smooth_text <- "  geom_smooth(size=2) +\n"
     } else {smooth_text <- ""}
+
+    # Multiple or single data series
+    if (!is.null(input$gcol) && input$has_groups == TRUE) {
+      aesthetic <- paste0("aes(x=", input$xcol, ", y=", input$ycol, ",\n",
+        "group=", input$gcol, ", shape=", input$gcol, ", col=", input$gcol, ")")
+    } else {
+      aesthetic <- paste0(
+        "aes(x=", input$xcol, ", y=", input$ycol, ")")
+    }
 
     paste0(
       text_instruction(),
       "require(ggplot2) || install.packages('ggplot2')\n",
       "require(lubridate) || install.packages('lubridate')\n",
-      "require(scales) || install.packages('scales')\n",
+      "require(scales) || install.packages('scales')\n\n",
+
       "df <- as.data.frame(lapply(\n  read.table('",
       input$ckan_csv, "', sep=',', header=T, stringsAsFactors=T),\n",
-      "  function(x) {if(is.factor(x)){x <- lubridate::parse_date_time(",
-      "x, c('YmdHMSz', 'YmdHMS','Ymd','dmY'), tz='Australia/Perth')};x}))\n\n",
+
+      "# Convert only columns called 'date' or 'Date' into POSIXct dates\n",
+      "cn <- names(df)\n",
+      "dcn <- c('date', 'Date') # Date column names\n",
+      "df[cn %in% dcn] <- lapply(\n",
+      "  df[cn %in% dcn],\n",
+      "  function(x){x<- lubridate::parse_date_time(x, orders=ldo, tz=ltz)}\n",
+      ")\n\n",
+
       "pdf('", input$output_filename,".pdf', height = 5, width = 7);\n",
-      "ggplot(df, aes_string(x='", input$xcol, "', y='", input$ycol, "')) +\n",
+
+      "ggplot(df, ", aesthetic, ")+\n",
       "  geom_line(position=position_dodge(", input$pd,")) +\n",
       "  geom_point(position=position_dodge(", input$pd,"), size=2) +\n",
       "  labs(title='",input$title,"', x='",input$x_label,"', y='",input$y_label,"') +\n",
       "  scale_x_datetime(labels=date_format('%Y-%m'), breaks='1 year', minor_breaks='3 months') +\n",
       smooth_text,
       mpa_theme_text,
+
       "\ndev.off()\n"
     ) # /paste
   }) #/reactive
