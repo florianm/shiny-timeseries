@@ -11,7 +11,9 @@ shinyServer(function(input, output) {
     items <- setNames(
       lapply(d$packages, function(x){x$id}),
       lapply(d$packages, function(x){x$title}))
-    selectInput("ckan_package", "Choose dataset", items)
+    selectInput("ckan_package",
+                "Choose dataset (select or type)",
+                items)
   })
 
   package_dict <- reactive({
@@ -29,21 +31,27 @@ shinyServer(function(input, output) {
   output$ckan_csv <- renderUI({
     r <- resource_dict()
     if (is.null(r)) return(NULL)
-    selectInput("ckan_csv", "Choose CSV data resource", res2nl(r, "CSV"))
+    selectInput("ckan_csv",
+                "Choose CSV resource to load data from",
+                res2nl(r, "CSV"))
   })
 
   # Let user select PDF resource to overwrite with new figure
   output$ckan_pdf <- renderUI({
     r <- resource_dict()
     if (is.null(r)) return(NULL)
-    selectInput("ckan_pdf", "Choose PDF graph resource", res2nl(r, "PDF"))
+    selectInput("ckan_pdf",
+                "Choose PDF resource to overwrite with figure",
+                res2nl(r, "PDF"))
   })
 
   # Let user select R code resource to overwrite with R code for figure
   output$ckan_r <- renderUI({
     r <- resource_dict()
     if (is.null(r)) return(NULL)
-    selectInput("ckan_r", "Choose R script resource", res2nl(r, "TXT"))
+    selectInput("ckan_r",
+                "Choose text resource to overwrite with R code",
+                res2nl(r, "TXT"))
   })
 
   # Load data from selected CSV resource, detect date formats
@@ -145,8 +153,9 @@ shinyServer(function(input, output) {
                   value = FALSE)
   })
   output$number_smooth_points <- renderUI({
-    sliderInput(inputId = "number_smooth_points", label = "Smoothing window",
-                min = 5, max = 200, value = 80, step = 5)
+    sliderInput(inputId = "number_smooth_points",
+                label = "Smoothing window (number of data points for moving average)",
+                min = 0, max = 200, value = 80, step = 5)
   })
 
   output$legend_title <- renderUI({ textInput("legend_title", "Legend Title") })
@@ -307,7 +316,7 @@ shinyServer(function(input, output) {
       "  df[cn %in% dcn],\n",
       "  function(x){\n",
       "    x<- lubridate::parse_date_time(",
-      "    x, orders=c('YmdHMSz', 'YmdHMS','Ymd','dmY'), tz='Australia/Perth')\n",
+      "x, orders=c('YmdHMSz', 'YmdHMS','Ymd','dmY'), tz='Australia/Perth')\n",
       "  }\n",
       ")\n\n",
 

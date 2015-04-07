@@ -4,66 +4,58 @@ library(ggplot2)
 library(plyr)
 library(lubridate)
 
-
-#' QCC plots
-library(qcc)
-data=read.csv("http://internal-data.dpaw.wa.gov.au/dataset/be25828b-e528-462e-a8a2-514723f7fe1e/resource/09556e7e-2cd2-4d1c-95bf-c299d41c7142/download/jbmpaslpupcounts.csv")
-
-x_col <- "abundance"
-y_col <- "label"
-filter_data <- TRUE
-filter_col <- "location"
-filter_by <- "Beagles"
-x_label <- "Season"
-y_label <- "Abundance"
-title_text <- "Abundance of Australian Sea Lion pups at Beagles Bay"
-cal0 = 1
-cal1 = 5
-new0 = x_cal_max + 1
-new1 = length(d)
-y_min = 0
-y_max = 100
-n_sigma = 2
-add_stats = TRUE
-group_statistics_type = "xbar.one"
-# "xbar"	mean	means of a continuous process variable
-# "R"	range	ranges of a continuous process variable
-# "S"	standard deviation	standard deviations of a continuous variable
-# "xbar.one"	mean	one-at-time data of a continuous process variable
-# "p"	proportion	proportion of nonconforming units
-# "np"	count	number of nonconforming units
-# "c"	count	nonconformities per unit
-# "u"	count	average nonconformities per unit
-# "g"	count	number of non-events between events
-
-
-if (filter_data == TRUE) {
-  df = subset(data, data[[filter_col]] == filter_by)
-} else {df = data}
-
-df.groups = qcc.groups(df[[x_col]], df[[y_col]])
-df.t=t(df.groups)
-d=na.omit(df.t)
-qcc(d[cal0:cal1,],
-    newdata=d[new0:new1,],
-    type=group_statistics_type,
-    add.stats=add_stats,
-    xlab=x_label,
-    ylab=y_label,
-    title = title_text,
-    ylim=c(y_min, y_max),
-    nsigmas=n_sigma
-)
-
 # Data cleaning
 # Asset in situ seawater temperature
 source("global.R")
+
+d <- get_data(url)
+summary(d); str(d)
+d2 <- tidyr::gather(d[1:maxcol], "site", "temperature", mincol:maxcol)
+# d2 <- d2[!is.na(d2$date),]
+summary(d2); str(d2)
+write.table(d2, file=filename, sep=",", row.names=F, col.names=T, quote=T)
+
+# JBMP
+url <- "http://internal-data.dpaw.wa.gov.au/dataset/82992b4c-18df-4282-a290-d5fac9a53171/resource/6e8107b1-b4c0-43e3-8ce7-b3f8abe0be09/download/jbmpinsitutemp.csv"
+filename <- "datajbmpinsitutemp.csv"
+mincol<- 2; maxcol <- 4
+
+# MMP
+url <- "http://internal-data.dpaw.wa.gov.au/dataset/60dc9e19-9531-4afa-8c9e-e62ed5da78f0/resource/5697e3d3-36e0-4fcb-9057-d278a425647e/download/mmpinsitutemp.csv"
+filename <- "datammpinsitutemp.csv"
+mincol<- 2; maxcol <- 4
+
+# NCMP
+url <- "http://internal-data.dpaw.wa.gov.au/dataset/e157ccfb-45db-447f-bd3e-2084287bb12e/resource/e099bffb-e822-4863-8cdb-857e51c114f1/download/ncmpinsitutemp.csv"
+filename <- "datancmpinsitutemp.csv"
+mincol<- 2; maxcol <- 6
+
+# DAMPA
+url <- "http://internal-data.dpaw.wa.gov.au/dataset/67527605-0064-4f39-8a95-009c2de55986/resource/f39d3a7d-7c76-41e3-a77b-2d3a2b663a0f/download/dampainsitutemp.csv"
+filename <- "datadampainsitutemp.csv"
+mincol<- 2; maxcol <- 6
+
+# MBIMPA
+url <- "http://internal-data.dpaw.wa.gov.au/dataset/b12b673a-ee02-40ac-90e0-d3e95d418be7/resource/19de9e1c-dbbf-42ce-8b0e-e0cfcbb5ba79/download/mbimpainsitutemp.csv"
+filename <- "datambimpainsitutemp.csv"
+mincol<- 2; maxcol <- 13
+
+# NMPA
+url <- "http://internal-data.dpaw.wa.gov.au/dataset/089efeb3-d73d-4123-9222-03103c283583/resource/90220625-40ae-47f0-a364-689c0469c528/download/nmpainsitutemp.csv"
+filename <- "datanmpainsitutemp.csv"
+mincol<- 2; maxcol <- 6
+
+# RSMP
 url <- "http://internal-data.dpaw.wa.gov.au/dataset/258537e3-7ea3-40e6-ae73-db0fd02b19a3/resource/054e1c99-0b26-4af7-837c-7a053bdd1e81/download/rsmpinsitutemp.csv"
 filename <- "datarsmpinsitutemp.csv"
-d <- get_data(url)
+mincol<- 2; maxcol <- 4
 
-d2 <- tidyr::gather(d[1:4], "site", "temperature", 2:4)
-summary(d2)
-lapply(d2, class)
+# SIMP
+url <- "http://internal-data.dpaw.wa.gov.au/dataset/bda97642-6377-40b7-89dd-85a599204466/resource/f7d03d06-78a1-4597-a3e5-164caa5554d3/download/simpinsitutemp.csv"
+filename <- "datasimpinsitutemp.csv"
+mincol<- 2; maxcol <- 4
 
-write.table(d2, file=filename, sep=",", row.names=F, col.names=T, quote=T)
+# SBMP
+url <- "http://internal-data.dpaw.wa.gov.au/dataset/6db69777-4b5e-45f2-82e7-22934b87cb5c/resource/1a1fce01-2c09-4dee-971a-487fca3d166f/download/sbmpainsitutemp.csv"
+filename <- "datasbmpinsitutemp.csv"
+mincol<- 2; maxcol <- 6

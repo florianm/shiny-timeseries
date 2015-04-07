@@ -32,7 +32,7 @@ shinyUI(
 
         wellPanel(
           h4("Save Figure"),
-          textInput("api_key", "Paste CKAN API key"),
+          textInput("api_key", "Paste your own CKAN API key"),
           uiOutput("ckan_pdf"),
           uiOutput("ckan_r"),
           textInput("output_filename", "File name", value="figure"),
