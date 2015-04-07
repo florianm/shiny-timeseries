@@ -67,4 +67,3 @@ summary(d2)
 lapply(d2, class)
 
 write.table(d2, file=filename, sep=",", row.names=F, col.names=T, quote=T)
-

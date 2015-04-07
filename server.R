@@ -190,9 +190,9 @@ shinyServer(function(input, output) {
     "  theme(\n",
     "    axis.text.x = element_text(size=", input$label_font_size, "),\n",
     "    axis.text.y = element_text(size=", input$label_font_size, "),\n",
-    "    axis.title.x=element_text(size=", input$label_font_size, "),\n",
-    "    axis.title.y=element_text(size=", input$label_font_size, "),\n",
-    "    legend.position='",input$legend_position,"'\n",
+    "    axis.title.x = element_text(size=", input$label_font_size, "),\n",
+    "    axis.title.y = element_text(size=", input$label_font_size, "),\n",
+    "    legend.position = '",input$legend_position,"'\n",
     "  )\n"
   )
   })
@@ -271,45 +271,54 @@ shinyServer(function(input, output) {
   # R code spelled out
   plot_code <- reactive({
 
+    # Reusable code fragment --------------------------------------------------#
+    aesthetic <- paste0("aes(x=", input$xcol, ", y=", input$ycol, ")")
+    pd <- paste0("position=position_dodge(", input$pd,")")
+
     # Optional moving average
     if (input$add_moving_average == T){
-      smooth_text <- "  geom_smooth(size=2) +\n"
-    } else {smooth_text <- ""}
+      geom_smooth_text <- paste0("  geom_smooth(", aesthetic ,", size=2, n=",
+                                 input$number_smooth_points, ") +\n")
+    } else {geom_smooth_text <- ""}
 
     # Multiple or single data series
     if (!is.null(input$gcol) && input$has_groups == TRUE) {
-      aesthetic <- paste0("aes(x=", input$xcol, ", y=", input$ycol, ",\n",
-        "group=", input$gcol, ", shape=", input$gcol, ", col=", input$gcol, ")")
+      aes_grp <- paste0("aes(x=", input$xcol, ", y=", input$ycol,
+        ", group=", input$gcol, ", shape=", input$gcol, ", col=", input$gcol, ")")
+      geom_point_text <- paste0("geom_point(", aes_grp, ", ", pd,", size=2) +\n")
+      geom_line_text <- paste0("geom_line(", aes_grp, ",\n", pd, ") +\n")
     } else {
-      aesthetic <- paste0(
-        "aes(x=", input$xcol, ", y=", input$ycol, ")")
+      geom_point_text <- paste0("geom_point(", pd,", size=2) +\n")
+      geom_line_text <- paste0("geom_line(", pd,") +\n")
     }
 
+    # Final code output -------------------------------------------------------#
     paste0(
       text_instruction(),
       "require(ggplot2) || install.packages('ggplot2')\n",
       "require(lubridate) || install.packages('lubridate')\n",
       "require(scales) || install.packages('scales')\n\n",
-
-      "df <- as.data.frame(lapply(\n  read.table('",
-      input$ckan_csv, "', sep=',', header=T, stringsAsFactors=T),\n",
-
+      "csv_url <- '", input$ckan_csv, "'\n",
+      "df <-read.table(csv_url, sep=',', header=T, stringsAsFactors=T)\n",
       "# Convert only columns called 'date' or 'Date' into POSIXct dates\n",
       "cn <- names(df)\n",
       "dcn <- c('date', 'Date') # Date column names\n",
       "df[cn %in% dcn] <- lapply(\n",
       "  df[cn %in% dcn],\n",
-      "  function(x){x<- lubridate::parse_date_time(x, orders=ldo, tz=ltz)}\n",
+      "  function(x){\n",
+      "    x<- lubridate::parse_date_time(",
+      "    x, orders=c('YmdHMSz', 'YmdHMS','Ymd','dmY'), tz='Australia/Perth')\n",
+      "  }\n",
       ")\n\n",
 
-      "pdf('", input$output_filename,".pdf', height = 5, width = 7);\n",
+      "pdf('", input$output_filename,".pdf', height = 5, width = 7)\n\n",
 
-      "ggplot(df, ", aesthetic, ")+\n",
-      "  geom_line(position=position_dodge(", input$pd,")) +\n",
-      "  geom_point(position=position_dodge(", input$pd,"), size=2) +\n",
+      "ggplot(df, ", aesthetic, ") +\n",
+      geom_point_text,
+      geom_line_text,
       "  labs(title='",input$title,"', x='",input$x_label,"', y='",input$y_label,"') +\n",
       "  scale_x_datetime(labels=date_format('%Y-%m'), breaks='1 year', minor_breaks='3 months') +\n",
-      smooth_text,
+      geom_smooth_text,
       mpa_theme_text(),
 
       "\ndev.off()\n"
