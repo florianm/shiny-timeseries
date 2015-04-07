@@ -10,7 +10,6 @@ shinyUI(
           uiOutput("ckan_csv"),
           uiOutput("ycol"),
           uiOutput("xcol"),
-#           uiOutput("fvars"),
           uiOutput("has_groups"),
           uiOutput("gcol")
         ), # /wellPanel
@@ -20,10 +19,14 @@ shinyUI(
           uiOutput("plot_title"),
           uiOutput("plot_ylab"),
           uiOutput("plot_xlab"),
-#           uiOutput("plot_x_breaks"),
-#           uiOutput("plot_x_extra"),
+          #           uiOutput("plot_x_breaks"),
+          #           uiOutput("plot_x_extra"),
           uiOutput("plot_pd"),
-          uiOutput("add_moving_average")
+          uiOutput("add_moving_average"),
+          uiOutput("number_smooth_points"),
+          uiOutput("legend_title"),
+          uiOutput("legend_position"),
+          uiOutput("label_font_size")
 
         ), # /wellPanel
 

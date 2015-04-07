@@ -14,32 +14,36 @@ shinyServer(function(input, output) {
     selectInput("ckan_package", "Choose dataset", items)
   })
 
+  package_dict <- reactive({
+    ckan_json(api_call="package_show", oid=input$ckan_package)
+  })
+
   # Get resources of CKAN once as dict
   resource_dict <- reactive ({
-    d <- ckan_json(api_call="package_show", oid=input$ckan_package)
+    d <- package_dict()
     if (is.null(d)) return(NULL)
     d$resources
   })
 
   # Let user select CSV from resources
   output$ckan_csv <- renderUI({
-    rr <- resources_format_filter(resource_dict(), "CSV")
-    i <- setNames(lapply(rr, function(x){x$url}), lapply(rr, function(x){x$name}))
-    selectInput("ckan_csv", "Choose CSV data resource", i)
+    r <- resource_dict()
+    if (is.null(r)) return(NULL)
+    selectInput("ckan_csv", "Choose CSV data resource", res2nl(r, "CSV"))
   })
 
   # Let user select PDF resource to overwrite with new figure
   output$ckan_pdf <- renderUI({
-    rr <- resources_format_filter(resource_dict(), "PDF")
-    i <- setNames(lapply(rr, function(x){x$url}), lapply(rr, function(x){x$name}))
-    selectInput("ckan_pdf", "Choose PDF graph resource", i)
+    r <- resource_dict()
+    if (is.null(r)) return(NULL)
+    selectInput("ckan_pdf", "Choose PDF graph resource", res2nl(r, "PDF"))
   })
 
   # Let user select R code resource to overwrite with R code for figure
   output$ckan_r <- renderUI({
-    rr <- resources_format_filter(resource_dict(), "TXT")
-    i <- setNames(lapply(rr, function(x){x$url}), lapply(rr, function(x){x$name}))
-    selectInput("ckan_r", "Choose R script resource", i)
+    r <- resource_dict()
+    if (is.null(r)) return(NULL)
+    selectInput("ckan_r", "Choose R script resource", res2nl(r, "TXT"))
   })
 
   # Load data from selected CSV resource, detect date formats
@@ -62,6 +66,7 @@ shinyServer(function(input, output) {
   #       items
   #     })
 
+  # Date variables
   datevars <- reactive({
     df <- data()
     if (is.null(df)) return(NULL)
@@ -71,6 +76,7 @@ shinyServer(function(input, output) {
     setNames(x,x)
   })
 
+  # Numeric variables
   numericvars <- reactive({
     df <- data()
     if (is.null(df)) return(NULL)
@@ -79,6 +85,7 @@ shinyServer(function(input, output) {
     setNames(x,x)
   })
 
+  # Factor variables
   factorvars <- reactive({
     df <- data()
     if (is.null(df)) return(NULL)
@@ -87,33 +94,31 @@ shinyServer(function(input, output) {
     setNames(x,x)
   })
 
-  output$fvars <- renderPrint({factorvars()})
-
-  # Let user select responding variable for y axis
+  # Let user assign any numeric variable to Y axis
   output$ycol <- renderUI({
     selectInput("ycol", "Choose Y variable", numericvars())
   })
 
-  # Let user select independent variable for x axis
+  # Let user assign any date variable to X axis
   output$xcol <- renderUI({
     selectInput("xcol", "Choose X variable", datevars())
   })
 
   # Let user choose whether to draw multiple data series
   output$has_groups <- renderUI({
-    conditionalPanel(
-      condition = "!is.null(factorvars()) && length(factorvars()) > 0",
       checkboxInput(inputId = "has_groups",
                     value = FALSE,
-                    label = strong("Group data by a factor")))
+                    label = strong("Group data by a factor"))
   })
 
   # Let user select factor variable for multiple data series
   output$gcol <- renderUI({
     conditionalPanel(condition = "input.has_groups == true",
-                     selectInput("gcol", "Choose grouping variable", factorvars())
+      selectInput("gcol", "Choose grouping variable", factorvars())
     )
   })
+  #
+  # Figure is ready to plot
 
   #----------------------------------------------------------------------------#
   # Plotting parameters
@@ -139,16 +144,59 @@ shinyServer(function(input, output) {
                   label = strong("Add moving average"),
                   value = FALSE)
   })
-  # End UI elements------------------------------------------------------------#
+  output$number_smooth_points <- renderUI({
+    sliderInput(inputId = "number_smooth_points", label = "Smoothing window",
+                min = 5, max = 200, value = 80, step = 5)
+  })
 
-  # output object: data summary
+  output$legend_title <- renderUI({ textInput("legend_title", "Legend Title") })
+  output$legend_position <- renderUI({
+    selectInput("legend_position",
+                "Legend Position",
+                c("Right"="right",
+                  "Bottom"="bottom",
+                  "Left"="left",
+                  "Top"="top"))
+  })
+  output$label_font_size <- renderUI({
+    sliderInput(inputId = "label_font_size", label = "Label font size",
+                min = 6, max = 24, value = 14, step = 1)
+  })
+
+  # End UI elements for plotting parameters -----------------------------------#
+
+  #----------------------------------------------------------------------------#
+  # output objects: data summary and table
   output$overview <- renderPrint({str(data())}, width=120)
   output$summary <- renderPrint({summary(data())}, width=120)
-
-  # output object: data table
   output$table <- renderDataTable({data()}, options=list(pageLength=10))
 
-  # object: ggplot
+  # output object: ggplot -----------------------------------------------------#
+  # The GGplot2 theme for MPA graphs
+  text_pars <- reactive({element_text(size=input$label_font_size)})
+  title_pars <- reactive({element_text(lineheight=.8, face="bold")})
+  mpa_theme <- reactive({
+    theme(axis.text.x = text_pars(),
+          axis.text.y = text_pars(),
+          axis.title.x= text_pars(),
+          axis.title.y= text_pars(),
+          plot.title = title_pars(),
+          legend.position=input$legend_position
+    )
+  })
+
+  mpa_theme_text <- reactive({
+    paste0(
+    "  theme(\n",
+    "    axis.text.x = element_text(size=", input$label_font_size, "),\n",
+    "    axis.text.y = element_text(size=", input$label_font_size, "),\n",
+    "    axis.title.x=element_text(size=", input$label_font_size, "),\n",
+    "    axis.title.y=element_text(size=", input$label_font_size, "),\n",
+    "    legend.position='",input$legend_position,"'\n",
+    "  )\n"
+  )
+  })
+
   plot_ggplot <- reactive({
     df <-data()
 
@@ -158,28 +206,41 @@ shinyServer(function(input, output) {
     dateformat <- "%Y-%m"
     datebreaks <- "1 year"
     dateminorbreaks <- "3 months"
+    simple_aes <- aes_string(x=input$xcol, y=input$ycol)
 
     # Multiple or single data series
     if (!is.null(input$gcol) && input$has_groups == TRUE) {
-      aesthetic <- aes_string(x=input$xcol, y=input$ycol,
-            group=input$gcol, shape=input$gcol, col=input$gcol)
+      # Split data by factor
+      geom_point_text <- geom_point(
+        aes_string(x=input$xcol, y=input$ycol,
+                   group=input$gcol, shape=input$gcol, col=input$gcol),
+        position=positiondodge,
+        size=pointsize
+        )
+      geom_line_text <- geom_line(
+        aes_string(x=input$xcol, y=input$ycol,
+                   group=input$gcol, shape=input$gcol, col=input$gcol),
+        position=positiondodge
+      )
     } else {
-      aesthetic <- aes_string(x=input$xcol, y=input$ycol)
+      # Plot all data
+      geom_point_text <- geom_point(position=positiondodge, size=pointsize)
+      geom_line_text <- geom_line(position=positiondodge)
     }
 
     # Main plot object
-    ggplt <- ggplot(df, aesthetic) +
-      geom_line(position=positiondodge) +
-      geom_point(position=positiondodge, size=pointsize) +
+    ggplt <- ggplot(df, simple_aes) +
+      geom_line_text +
+      geom_point_text +
       labs(title=input$title, x=input$x_label, y=input$y_label) +
       scale_x_datetime(labels=date_format(dateformat),
                        breaks=date_breaks(datebreaks),
                        minor_breaks=dateminorbreaks) +
-      mpa_theme
+      mpa_theme()
 
     # Optional moving average
     if (input$add_moving_average == T){
-      ggplt <- ggplt + geom_smooth(size=pointsize)
+      ggplt <- ggplt + geom_smooth(simple_aes, size=pointsize, n=input$number_smooth_points)
     }
 
     ggplt
@@ -249,7 +310,7 @@ shinyServer(function(input, output) {
       "  labs(title='",input$title,"', x='",input$x_label,"', y='",input$y_label,"') +\n",
       "  scale_x_datetime(labels=date_format('%Y-%m'), breaks='1 year', minor_breaks='3 months') +\n",
       smooth_text,
-      mpa_theme_text,
+      mpa_theme_text(),
 
       "\ndev.off()\n"
     ) # /paste

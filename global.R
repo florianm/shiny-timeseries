@@ -4,6 +4,7 @@ library(shiny)
 
 # rendering
 require(markdown) || install.packages("markdown")
+require(whisker) || install.packages("whisker")
 
 # plotting
 require(ggplot2) || install.packages("ggplot2")
@@ -65,53 +66,30 @@ get_data <- function(url,
   df
 }
 
-#' From CKAN package$resources loaded as R list, return items matching format_string
+#' Filter CKAN package$resources loaded as R list by file type
 #'
-#' @param res_list A CKAN package$resources JSON dict, loaded as R list
-#' @param format_string The desired format, e.g. "CSV", "PDF", "TXT"
-resources_format_filter <- function(res_list, format_string){
+#' @param resource_dict A CKAN package$resources JSON dict, loaded as R list
+#' @filetype_string The file type as string, e.g. "CSV", "PDF", "TXT"
+#' @return The resource_dict with only those resources matching the file type
+resources_format_filter <- function(resource_dict, filetype_string){
   Filter(
-    function(res_list){
-      length(res_list)>0 && res_list[["format"]] == format_string
+    function(resource_dict){
+      length(resource_dict)>0 && resource_dict[["format"]] == filetype_string
     },
-    res_list
+    resource_dict
   )
 }
 
-#------------------------------------------------------------------------------#
-# The GGplot2 theme for MPA graphs
-et14 <- element_text(size=14)
-mpa_theme <- theme(axis.text.x = et14,
-                   axis.text.y = et14,
-                   axis.title.x= et14,
-                   axis.title.y= et14,
-                   plot.title = element_text(lineheight=.8, face="bold"),
-                   #axis.line=element_line(colour="black"),
-                   #panel.grid.minor = element_blank(),
-                   #panel.grid.major = element_blank(),
-                   #panel.border=element_blank(),
-                   #panel.background=element_blank(),
-                   #legend.title = element_blank(),
-                   #legend.key = element_blank(),
-                   legend.position="right"
-                   )
-
-mpa_theme_text <- paste(
-  "  theme(",
-  "    axis.text.x = element_text(size=14),",
-  "    axis.text.y = element_text(size=14),",
-  "    axis.title.x=element_text(size=14),",
-  "    axis.title.y=element_text(size=14),",
-  #   "    axis.line=element_line(colour='black'),",
-  #   "    panel.grid.minor = element_blank(),",
-  #   "    panel.grid.major = element_blank(),",
-  #   "    panel.border=element_blank(),",
-  #   "    panel.background=element_blank(),",
-  "    legend.position='right'",
-
-  "  )",
-  sep="\n"
-)
+#' Make named list (name=url) from CKAN resource dict filtered by file type
+#'
+#' @param resource_dict A CKAN package$resources JSON dict, loaded as R list
+#' @filetype_string The file type as string, e.g. "CSV", "PDF", "TXT"
+#' @return A named list of CKAN resource names (as keys) and URLs (as values)
+res2nl <- function(resource_dict, filetype_string){
+  rr <- resources_format_filter(resource_dict, filetype_string)
+  i <- setNames(lapply(rr, function(x){x$url}),
+                lapply(rr, function(x){x$name}))
+}
 
 #------------------------------------------------------------------------------#
 # CKAN API helpers
