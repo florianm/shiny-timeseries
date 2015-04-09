@@ -43,7 +43,7 @@ shinyUI(
 
       ), # /sidebarPanel
       mainPanel(
-
+#         progressInit(),
         tabsetPanel(type = "tabs",
 
                     tabPanel("Inspect",

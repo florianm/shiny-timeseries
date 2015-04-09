@@ -1,6 +1,7 @@
 #' Library imports, helper functions, global variables
 
 library(shiny)
+# require(shinyIncubator) || install.packages("shinyIncubator")
 
 # rendering
 require(markdown) || install.packages("markdown")
@@ -17,8 +18,8 @@ require(rjson) || install.packages("rjson")
 
 # utilities
 require(lubridate) || install.packages("lubridate")
-# require(tidyr) || install.packages("tidyr")
-# require(dplyr) || install.packages("dplyr")
+require(tidyr) || install.packages("tidyr")
+require(dplyr) || install.packages("dplyr")
 
 
 #------------------------------------------------------------------------------#

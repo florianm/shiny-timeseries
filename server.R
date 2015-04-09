@@ -4,38 +4,37 @@ shinyServer(function(input, output) {
   #----------------------------------------------------------------------------#
   # Select data
 
-  #' A CKAN API response of datasets (packages) matching a tag "format_csv_ts"
-  #'
-  #' @return An R list of lists of all packages (with nested resources)
-  #' matching the tag
   datasets <- reactive({
-    x <- ckan_json(api_call="tag_show", oid="format_csv_ts")$packages
-    if (is.null(x)) return(NULL); x
+    x <- ckan_json(api_call="tag_show", oid="format_csv_ts")
+    if (is.null(x)) return(NULL)
+    x$packages
   })
 
   # Query CKAN for packages with tag "format_csv_ts"
   output$ckan_package <- renderUI({
-    d <- datasets()
-    if (is.null(d)) return(NULL)
-    items <- setNames(lapply(d, function(x){x$id}),
-                      lapply(d, function(x){x$title}))
-    selectInput("ckan_package", "Choose dataset (select or type)", items)
+    withProgress(message = 'Loading datasets...', value = 0, {
+        d <- datasets()
+        if (is.null(d)) return(NULL)
+        items <- setNames(lapply(d, function(x){x$id}),
+                          lapply(d, function(x){x$title}))
+        selectInput("ckan_package", "Choose dataset (select or type)", items)
+      })
   })
 
   package_dict <- reactive({
-    x <- ckan_json(api_call="package_show", oid=input$ckan_package)
-    if (is.null(x)) return(NULL); x
-    # or:
-    # x <- list_filter(datasets(), "id", input$ckan_package)
+    ckan_json(api_call="package_show", oid=input$ckan_package)
+    # list_filter(datasets(), "id", input$ckan_package) # works on cmdline, not here - why?
   })
 
   # Let user select CSV from resources
   output$ckan_csv <- renderUI({
+    withProgress(message = 'Detecting CSV data resource...', value = 0, {
     p <- package_dict()
     if (is.null(p)) return(NULL)
     selectInput("ckan_csv",
                 "Choose CSV resource to load data from",
                 res2nl(p$resources, "CSV"))
+    })
   })
 
   # Let user select PDF resource to overwrite with new figure
@@ -58,9 +57,9 @@ shinyServer(function(input, output) {
 
   # Load data from selected CSV resource, detect date formats
   data <- reactive({
-    x <- get_data(input$ckan_csv)
-    if (is.null(x)) return(NULL); x
-    })
+    if (is.null(input$ckan_csv)) return(NULL)
+    get_data(input$ckan_csv)
+  })
   # data is now loaded
   #----------------------------------------------------------------------------#
 
@@ -78,12 +77,14 @@ shinyServer(function(input, output) {
 
   # Date variables
   datevars <- reactive({
+    withProgress(message = 'Fiddling with variables...', value = 0, {
     df <- data()
     if (is.null(df)) return(NULL)
     # urge to scrape out eyes with rusty spoon intensifies...
     x = names(Filter(function(x){length(x)==2 && x[[1]]=="POSIXct"},
                      setNames(sapply(df, class), names(df))))
     setNames(x,x)
+    })
   })
 
   # Numeric variables
@@ -123,8 +124,9 @@ shinyServer(function(input, output) {
 
   # Let user select factor variable for multiple data series
   output$gcol <- renderUI({
-    conditionalPanel(condition = "input.has_groups == true",
-                     selectInput("gcol", "Choose grouping variable", factorvars())
+    conditionalPanel(
+      condition = "input.has_groups == true",
+      selectInput("gcol", "Choose grouping variable", factorvars())
     )
   })
   #
@@ -221,6 +223,7 @@ shinyServer(function(input, output) {
   })
 
   plot_ggplot <- reactive({
+    withProgress(message = 'Drawing figure...', value = 0, {
     df <-data()
 
     # Parameters
@@ -267,6 +270,7 @@ shinyServer(function(input, output) {
     }
 
     ggplt
+    })
 
   })
 
