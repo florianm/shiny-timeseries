@@ -13,123 +13,100 @@ shinyServer(function(input, output) {
   # Query CKAN for packages with tag "format_csv_ts"
   output$ckan_package <- renderUI({
     withProgress(message = 'Loading datasets...', value = 0, {
-        d <- datasets()
-        if (is.null(d)) return(NULL)
-        items <- setNames(lapply(d, function(x){x$id}),
-                          lapply(d, function(x){x$title}))
-        selectInput("ckan_package", "Choose dataset (select or type)", items)
-      })
+      d <- datasets()
+      if (is.null(d)) return(NULL)
+      items <- setNames(lapply(d, function(x){x$id}),
+                        lapply(d, function(x){x$title}))
+      selectInput("ckan_package", "Choose dataset (select or type)", items)
+    })
   })
 
   package_dict <- reactive({
     ckan_json(api_call="package_show", oid=input$ckan_package)
-    # list_filter(datasets(), "id", input$ckan_package) # works on cmdline, not here - why?
+
+    # works on cmdline, not here - why?
+    # list_filter(datasets(), "id", input$ckan_package)
   })
 
   # Let user select CSV from resources
   output$ckan_csv <- renderUI({
-    withProgress(message = 'Detecting CSV data resource...', value = 0, {
-    p <- package_dict()
-    if (is.null(p)) return(NULL)
-    selectInput("ckan_csv",
-                "Choose CSV resource to load data from",
-                res2nl(p$resources, "CSV"))
+    withProgress(message = 'Shlorping data...', value = 0, {
+      p <- package_dict()
+      r <- p$resources
+      if (is.null(r)) return(NULL)
+      selectInput("ckan_csv",
+                  "Choose CSV resource to load data from",
+                  res2nl(r, "CSV"))
     })
   })
 
-  # Let user select PDF resource to overwrite with new figure
-  output$ckan_pdf <- renderUI({
+  # Save and upload output
+  output$push2ckan <- renderUI({
     p <- package_dict()
     if (is.null(p)) return(NULL)
-    selectInput("ckan_pdf",
-                "Choose PDF resource to overwrite with figure",
-                res2nl(p$resources, "PDF"))
-  })
-
-  # Let user select R code resource to overwrite with R code for figure
-  output$ckan_r <- renderUI({
-    p <- package_dict()
-    if (is.null(p)) return(NULL)
-    selectInput("ckan_r",
-                "Choose text resource to overwrite with R code",
-                res2nl(p$resources, "TXT"))
+    wellPanel(
+      h4("Upload to data catalogue"),
+      selectInput("ckan_pdf", "Choose PDF resource to overwrite with figure",
+                  res2nl(p$resources, "PDF")),
+      selectInput("ckan_r", "Choose text resource to overwrite with R code",
+                  res2nl(p$resources, "TXT")),
+      textInput("api_key", "Paste your own CKAN API key")
+    )
   })
 
   # Load data from selected CSV resource, detect date formats
   data <- reactive({
-    if (is.null(input$ckan_csv)) return(NULL)
-    get_data(input$ckan_csv)
+    x <- input$ckan_csv
+    if (is.null(x)) return(NULL)
+    d <- get_data(x)
+    d
   })
   # data is now loaded
   #----------------------------------------------------------------------------#
 
   #----------------------------------------------------------------------------#
   # Inspect and select data to plot
-  #
-  # Get data columns as named list, all or filtered by class
-  #     datavars <- reactive({
-  #       df <- data()
-  #       if (is.null(df)) return(NULL)
-  #       x <- names(df)
-  #       items=setNames(x,x)
-  #       items
-  #     })
 
-  # Date variables
-  datevars <- reactive({
-    withProgress(message = 'Fiddling with variables...', value = 0, {
+  varlists <- reactive({
     df <- data()
-    if (is.null(df)) return(NULL)
-    # urge to scrape out eyes with rusty spoon intensifies...
-    x = names(Filter(function(x){length(x)==2 && x[[1]]=="POSIXct"},
-                     setNames(sapply(df, class), names(df))))
-    setNames(x,x)
+
+    dv <- names(Filter(function(x){length(x)==2 && x[[1]]=="POSIXct"},
+                       setNames(sapply(df, class), names(df))))
+
+    nv <- names(Filter(function(x){length(x)==1 && x[[1]]=="numeric"},
+                       setNames(sapply(df, class), names(df))))
+
+    fv <- names(Filter(function(x){length(x)==1 && x[[1]]=="factor"},
+                       setNames(sapply(df, class), names(df))))
+    v <- list(
+      "nv" = setNames(nv,nv),
+      "dv" = setNames(dv,dv),
+      "fv" = setNames(fv,fv)
+    )
+    v
+
+  })
+
+  output$varmap <- renderUI({
+    withProgress(message = 'Fiddling with variables...', value = 0, {
+
+      v <- varlists()
+      if (is.null(v)) return(NULL)
+
+      wellPanel(
+        selectInput("ycol", "Choose Y variable", v$nv),
+        selectInput("xcol", "Choose X variable", v$dv),
+        checkboxInput(inputId = "has_groups",
+                      value = FALSE,
+                      label = strong("Group data by a factor")),
+        conditionalPanel(
+          condition = "input.has_groups == true",
+          selectInput("gcol", "Choose grouping variable", v$fv))
+      )
+
     })
   })
 
-  # Numeric variables
-  numericvars <- reactive({
-    df <- data()
-    if (is.null(df)) return(NULL)
-    x = names(Filter(function(x){length(x)==1 && x[[1]]=="numeric"},
-                     setNames(sapply(df, class), names(df))))
-    setNames(x,x)
-  })
-
-  # Factor variables
-  factorvars <- reactive({
-    df <- data()
-    if (is.null(df)) return(NULL)
-    x = names(Filter(function(x){length(x)==1 && x[[1]]=="factor"},
-                     setNames(sapply(df, class), names(df))))
-    setNames(x,x)
-  })
-
-  # Let user assign any numeric variable to Y axis
-  output$ycol <- renderUI({
-    selectInput("ycol", "Choose Y variable", numericvars())
-  })
-
-  # Let user assign any date variable to X axis
-  output$xcol <- renderUI({
-    selectInput("xcol", "Choose X variable", datevars())
-  })
-
-  # Let user choose whether to draw multiple data series
-  output$has_groups <- renderUI({
-    checkboxInput(inputId = "has_groups",
-                  value = FALSE,
-                  label = strong("Group data by a factor"))
-  })
-
-  # Let user select factor variable for multiple data series
-  output$gcol <- renderUI({
-    conditionalPanel(
-      condition = "input.has_groups == true",
-      selectInput("gcol", "Choose grouping variable", factorvars())
-    )
-  })
-  #
   # Figure is ready to plot
 
   #----------------------------------------------------------------------------#
@@ -144,48 +121,53 @@ shinyServer(function(input, output) {
                    min = as.Date("1900-01-01"), max = as.Date("2015-06-30"),
                    format = "yyyy-mm-dd", startview = "month",
                    weekstart = 1, language = "en", separator = " to ")
+    #     sliderInput(inputId = "x_extra", label = "X scale padding",
+    #                 min = 0, max = 1, value = 0.15, step = 0.05)
   })
 
-  output$plot_title <- renderUI({ textInput("title", "Figure title") })
-  output$plot_ylab <- renderUI({ textInput("y_label", "Y axis label") })
-  output$plot_xlab <- renderUI({ textInput("x_label", "X axis label") })
-  output$plot_x_breaks <- renderUI({
-    sliderInput(inputId = "max_x_breaks", label = "Number of X axis breaks",
-                min = 0, max = 20, value = 10, step = 1)
-  })
-  output$plot_pd <- renderUI({
-    sliderInput(inputId = "pd", label = "Position dodge",
-                min = 0, max = 1, value = 0, step = 0.05)
-  })
-  output$plot_x_extra <- renderUI({
-    sliderInput(inputId = "x_extra", label = "X scale padding",
-                min = 0, max = 1, value = 0.15, step = 0.05)
-  })
-  output$add_moving_average <- renderUI({
-    checkboxInput(inputId = "add_moving_average",
-                  label = strong("Add moving average"),
-                  value = FALSE)
-  })
-  output$number_smooth_points <- renderUI({
-    conditionalPanel(condition = "input.add_moving_average == true",
-                     sliderInput(inputId = "number_smooth_points",
-                                 label = "Smoothing window size (number of data points for moving average)",
-                                 min = 0, max = 200, value = 80, step = 5)
+  output$plot_labels <- renderUI({
+    wellPanel(
+      textInput("title", "Figure title") ,
+      textInput("y_label", "Y axis label"),
+      textInput("x_label", "X axis label"),
+      #sliderInput(inputId = "max_x_breaks", label = "Number of X axis breaks",
+      #            min = 0, max = 20, value = 10, step = 1),
+      #sliderInput(inputId = "pd", label = "Position dodge",
+      #            min = 0, max = 1, value = 0, step = 0.05)
+      sliderInput(inputId = "label_font_size", label = "Label font size",
+                  min = 6, max = 24, value = 14, step = 1)
     )
   })
 
-  output$legend_title <- renderUI({ textInput("legend_title", "Legend Title") })
-  output$legend_position <- renderUI({
-    selectInput("legend_position",
-                "Legend Position",
-                c("Right"="right",
-                  "Bottom"="bottom",
-                  "Left"="left",
-                  "Top"="top"))
+  output$moving_average <- renderUI({
+    wellPanel(
+      checkboxInput(inputId = "add_moving_average",
+                    label = strong("Add moving average"),
+                    value = FALSE),
+      conditionalPanel(condition = "input.add_moving_average == true",
+                       sliderInput(inputId = "number_smooth_points",
+                                   label = "Smoothing window size",
+                                   min = 0, max = 200, value = 80, step = 5)
+      )
+    )
   })
-  output$label_font_size <- renderUI({
-    sliderInput(inputId = "label_font_size", label = "Label font size",
-                min = 6, max = 24, value = 14, step = 1)
+
+  output$hline <- renderUI({
+    wellPanel(
+      checkboxInput(inputId = "add_hline",
+                    label = strong("Add horizontal line"),
+                    value = FALSE),
+      conditionalPanel(condition = "input.add_hline == true",
+                       numericInput("hline_y", "Y offset", value=31))
+    )
+  })
+
+  output$legend <- renderUI({
+    wellPanel(
+      textInput("legend_title", "Legend Title"),
+      selectInput("legend_position", "Legend Position",
+                  c("Right"="right", "Bottom"="bottom", "Left"="left", "Top"="top"))
+    )
   })
 
   # End UI elements for plotting parameters -----------------------------------#
@@ -206,6 +188,8 @@ shinyServer(function(input, output) {
           axis.title.x= text_pars(),
           axis.title.y= text_pars(),
           plot.title = title_pars(),
+          legend.title=text_pars(),
+          legend.text=text_pars(),
           legend.position=input$legend_position
     )
   })
@@ -217,6 +201,8 @@ shinyServer(function(input, output) {
       "    axis.text.y = element_text(size=", input$label_font_size, "),\n",
       "    axis.title.x = element_text(size=", input$label_font_size, "),\n",
       "    axis.title.y = element_text(size=", input$label_font_size, "),\n",
+      "    legend.title = element_text(size=", input$label_font_size, "),\n",
+      "    legend.text = element_text(size=", input$label_font_size, "),\n",
       "    legend.position = '",input$legend_position,"'\n",
       "  )\n"
     )
@@ -224,70 +210,60 @@ shinyServer(function(input, output) {
 
   plot_ggplot <- reactive({
     withProgress(message = 'Drawing figure...', value = 0, {
-    df <-data()
+      df <-data()
 
-    # Parameters
-    positiondodge <- position_dodge(input$pd)
-    pointsize <- 2
-    dateformat <- "%Y-%m"
-    datebreaks <- "1 year"
-    dateminorbreaks <- "3 months"
-    date_range <- as.POSIXct(as.Date(input$plot_x_range))
-    simple_aes <- aes_string(x=input$xcol, y=input$ycol)
+      # Parameters
+      positiondodge <- position_dodge(input$pd)
+      pointsize <- 2
+      dateformat <- "%Y-%m"
+      datebreaks <- "1 year"
+      dateminorbreaks <- "3 months"
+      date_range <- as.POSIXct(as.Date(input$plot_x_range))
+      simple_aes <- aes_string(x=input$xcol, y=input$ycol)
 
-    # Multiple or single data series
-    if (!is.null(input$gcol) && input$has_groups == TRUE) {
-      # Split data by factor
-      geom_point_text <- geom_point(
-        aes_string(x=input$xcol, y=input$ycol,
-                   group=input$gcol, shape=input$gcol, col=input$gcol),
-        position=positiondodge,
-        size=pointsize
-      )
-      geom_line_text <- geom_line(
-        aes_string(x=input$xcol, y=input$ycol,
-                   group=input$gcol, shape=input$gcol, col=input$gcol),
-        position=positiondodge
-      )
-    } else {
-      # Plot all data
-      geom_point_text <- geom_point(position=positiondodge, size=pointsize)
-      geom_line_text <- geom_line(position=positiondodge)
-    }
+      # Multiple or single data series
+      if (!is.null(input$gcol) && input$has_groups == TRUE) {
+        # Split data by factor
+        geom_point_text <- geom_point(
+          aes_string(x=input$xcol, y=input$ycol,
+                     group=input$gcol, shape=input$gcol, col=input$gcol),
+          position=positiondodge,
+          size=pointsize
+        )
+        geom_line_text <- geom_line(
+          aes_string(x=input$xcol, y=input$ycol,
+                     group=input$gcol, shape=input$gcol, col=input$gcol),
+          position=positiondodge
+        )
+      } else {
+        # Plot all data
+        geom_point_text <- geom_point(position=positiondodge, size=pointsize)
+        geom_line_text <- geom_line(position=positiondodge)
+      }
 
-    # Main plot object
-    ggplt <- ggplot(df, simple_aes) +
-      geom_line_text +
-      geom_point_text +
-      labs(title=input$title, x=input$x_label, y=input$y_label) +
-      scale_x_datetime(labels=date_format(dateformat),
-                       limits=date_range,
-                       breaks=date_breaks(datebreaks),
-                       minor_breaks=dateminorbreaks) +
-      mpa_theme()
+      # Main plot object
+      ggplt <- ggplot(df, simple_aes) +
+        geom_line_text +
+        geom_point_text +
+        labs(title=input$title, x=input$x_label, y=input$y_label) +
+        scale_x_datetime(labels=date_format(dateformat),
+                         limits=date_range,
+                         breaks=date_breaks(datebreaks),
+                         minor_breaks=dateminorbreaks) +
+        mpa_theme()
 
-    # Optional moving average
-    if (input$add_moving_average == T){
-      ggplt <- ggplt + geom_smooth(simple_aes, size=pointsize, n=input$number_smooth_points)
-    }
+      # Optional moving average
+      if (input$add_moving_average == T){
+        ggplt <- ggplt + geom_smooth(simple_aes, size=pointsize, n=input$number_smooth_points)
+      }
 
-    ggplt
+      ggplt
     })
 
   })
 
   # output object: rendered plot
   output$plot_ggplot <- renderPlot({plot_ggplot()})
-
-  # output object: download PDF
-  output$downloadPdf <- downloadHandler(
-    filename = function() {paste0(input$output_filename, '.pdf')},
-    content = function(file) {
-      pdf(file, height = 5, width = 7);
-      print(plot_ggplot());
-      dev.off()
-    }
-  )
 
   # Output object: instruction dependent on valid ckan_r url
   text_instruction <- reactive({
@@ -360,10 +336,29 @@ shinyServer(function(input, output) {
   # output object: rendered R code
   output$rcode <- renderText({plot_code()})
 
+  # output object: download PDF
+  output$downloadPdf <- downloadHandler(
+    filename = function() {paste0(input$output_filename, '.pdf')},
+    content = function(file) {
+      pdf(file, height = 5, width = 7);
+      print(plot_ggplot());
+      dev.off()
+    }
+  )
+
   # output object: download R code
   output$downloadCode <- downloadHandler(
     filename = function() {paste0(input$output_filename, '.txt')},
     content = function(file) {writeLines(plot_code(), file)}
   )
+
+  output$save2disk <- renderUI({
+    wellPanel(
+      h4("Save to disk"),
+      textInput("output_filename", "File name", value="figure"),
+      downloadButton("downloadPdf", "Download PDF"),
+      downloadButton("downloadCode", "Download R Code")
+    )
+  })
 
 })

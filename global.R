@@ -6,6 +6,8 @@ library(shiny)
 # rendering
 require(markdown) || install.packages("markdown")
 require(whisker) || install.packages("whisker")
+require(Hmisc) || install.packages("Hmisc")
+
 
 # plotting
 require(ggplot2) || install.packages("ggplot2")
@@ -56,7 +58,7 @@ get_data <- function(url,
     df[cn %in% dcn],
     function(x){x<- lubridate::parse_date_time(x, orders=ldo, tz=ltz)}
   )
-
+  names(df) <- capitalize(names(df))
   df
 }
 

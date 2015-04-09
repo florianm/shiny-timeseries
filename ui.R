@@ -8,37 +8,22 @@ shinyUI(
           h4("Load Data"),
           uiOutput("ckan_package"),
           uiOutput("ckan_csv"),
-          uiOutput("ycol"),
-          uiOutput("xcol"),
-          uiOutput("has_groups"),
-          uiOutput("gcol")
+          uiOutput("varmap")
         ), # /wellPanel
 
         wellPanel(
           h4("Plot Data"),
           uiOutput("plot_x_range"),
-          uiOutput("plot_title"),
-          uiOutput("plot_ylab"),
-          uiOutput("plot_xlab"),
-          #           uiOutput("plot_x_breaks"),
-          #           uiOutput("plot_x_extra"),
-          uiOutput("plot_pd"),
-          uiOutput("add_moving_average"),
-          uiOutput("number_smooth_points"),
-          uiOutput("legend_title"),
-          uiOutput("legend_position"),
-          uiOutput("label_font_size")
-
+          uiOutput("plot_labels"),
+          uiOutput("moving_average"),
+          uiOutput("hline"),
+          uiOutput("legend")
         ), # /wellPanel
 
         wellPanel(
-          h4("Save Figure"),
-          textInput("api_key", "Paste your own CKAN API key"),
-          uiOutput("ckan_pdf"),
-          uiOutput("ckan_r"),
-          textInput("output_filename", "File name", value="figure"),
-          downloadButton("downloadPdf", "Download PDF"),
-          downloadButton("downloadCode", "Download R Code")
+          h4("Save Products"),
+          uiOutput("save2disk"),
+          uiOutput("push2ckan")
         ) # /wellPanel
 
       ), # /sidebarPanel
