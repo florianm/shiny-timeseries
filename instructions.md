@@ -13,9 +13,12 @@ Using this application has multiple benefits:
 
 # How can I use it?
 
-* Choose a dataset, choose the CSV resource, and inspect / preview the data.
-* Pick a numeric variable for the y axis, and a date variable for the x axis.
-* View the graph in the "visualise" tab, modify graphical parameters. 
+* Choose a dataset, choose the CSV resource, and inspect / preview the data. You 
+can delete the selected dataset and type a region or indicator to filter the list.
+* Pick a numeric variable for the y axis, and a date variable for the x axis. The 
+first date and numeric variables are pre-selected by default.
+* View the graph in the "plot" tab, modify graphical parameters in the side panel 
+as required.
 * Download the graph as PDF, plus the R code to reproduce the graph as text.
 * Coming soon: paste your CKAN API key to upload the PDF graph and R code back to the data catalogue.
 
@@ -30,7 +33,7 @@ conforming to a particular standard:
 
 * The CKAN dataset must carry the tag `format_csv_ts` in order to show up in `Choose dataset`.
 * The dataset title should include the area ("SBMPA" or "Shark Bay Marine Protected Areas" 
-or "Shark Bay MPA") and the asset name (what the data is about, e.g. "Seagrass cover", 
+preferred: "Shark Bay MPA") and the asset name (what the data is about, e.g. "Seagrass cover", 
 "Finfish abundance", "Boat registrations"). Type into the select box to filter!
 * The data must be attached to the dataset as CSV resource in the format described below.
 * A figure must be attached to the dataset as PDF resource.
@@ -38,6 +41,8 @@ or "Shark Bay MPA") and the asset name (what the data is about, e.g. "Seagrass c
 * Data (CSV), figure (PDF) and R script (TXT) should have the file names 
 "dataDSTITLE.csv", "figureDSTITLE.pdf", or "scriptDSTITLE.txt", respectively,
 and the resource name "Data/Figure/R Script DSTITLE", where *DSTITLE* should be the dataset title.
+* Data, figure and code should be the first three resources on the dataset (manage > resources > re-order) so
+they will get picked up correctly by default.
 * You must be authorised to update the data catalogue if you want to upload figure and script directly.
 
 # What's the required format and structure for the CSV file?
@@ -47,9 +52,9 @@ variable names.
 
 For univariate time series, the CSV **must** have:
 
-* one column "datetime" with a quoted string of an ISO8601 date and time with or without timestamp 
+* one column "datetime" or "Datetime" with a string of an ISO8601 date and time with or without timestamp 
 (`2014-12-31T23:56:59+08:00` or `2014-12-31T23:56:59` assuming GMT+08), or 
-* one column "date" with a quoted string of an ISO8601 date (preferred `2014-12-31` over `31-12-2014`),
+* one column "date" or "Date" with a quoted string of an ISO8601 date (preferred `2014-12-31` over `31-12-2014`),
 * one column with the univariate dependent variable labelled alphanumerically (preferred "value")
 
 Example:

@@ -28,33 +28,20 @@ shinyUI(
 
       ), # /sidebarPanel
       mainPanel(
-#         progressInit(),
         tabsetPanel(type = "tabs",
-
                     tabPanel("Inspect",
-                             h1("Select columns to plot"),
-                             p("The Y axis must be a numeric variable."),
-                             p(paste0("The X axis must be a valid datetime or",
-                                      " date. Supported ISO 8601 date formats ",
-                                      "are: Y-m-d (H:M:S (z)).")),
-                             p("Have a look at the data below, and choose Y and X variables accordingly."),
                              verbatimTextOutput("overview"),
                              verbatimTextOutput("summary"),
                              dataTableOutput("table")
                     ),
-
-                    tabPanel("Visualise",
+                    tabPanel("Plot",
                              plotOutput("plot_ggplot"),
                              verbatimTextOutput("rcode")
-
                     ),
-
-                    tabPanel("Help",
+                    tabPanel("Learn more",
                              includeMarkdown("instructions.md")
                     )
-
         ) # /tabsetPanel
-
       ) # /mainPanel
     ) # /sidebarLayout
   ) # /fluidPage

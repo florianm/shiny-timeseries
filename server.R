@@ -238,7 +238,7 @@ shinyServer(function(input, output) {
       }
 
       # Main plot object
-      ggplt <- ggplot(df, simple_aes) +
+      g <- ggplot(df, simple_aes) +
         geom_line_text +
         geom_point_text +
         labs(title=input$title, x=input$x_label, y=input$y_label) +
@@ -250,10 +250,16 @@ shinyServer(function(input, output) {
 
       # Optional moving average
       if (input$add_moving_average == T){
-        ggplt <- ggplt + geom_smooth(simple_aes, size=pointsize, n=input$number_smooth_points)
+        g <- g + geom_smooth(simple_aes, size=pointsize,
+                             n=input$number_smooth_points)
       }
 
-      ggplt
+      # Optional hline
+      if (input$add_hline == T){
+        g <- g + geom_hline(aes_string(yintercept=input$hline_y))
+      }
+
+      g
     })
 
   })
@@ -282,6 +288,13 @@ shinyServer(function(input, output) {
       geom_smooth_text <- paste0("  geom_smooth(", aesthetic ,", size=2, n=",
                                  input$number_smooth_points, ") +\n")
     } else {geom_smooth_text <- ""}
+
+    # Optional hline
+    if (input$add_hline == T){
+      geom_hline_text <- paste0("  geom_hline(aes(yintercept=", input$hline_y ,")) +\n")
+    } else {geom_hline_text <- ""}
+
+
 
     # Multiple or single data series
     if (!is.null(input$gcol) && input$has_groups == TRUE) {
@@ -322,6 +335,7 @@ shinyServer(function(input, output) {
       "    limits=c(as.POSIXct('", date_range[1], "'), as.POSIXct('", date_range[2], "')),\n",
       "    breaks='1 year', minor_breaks='3 months') +\n",
       geom_smooth_text,
+      geom_hline_text,
       mpa_theme_text(),
 
       "\ndev.off()\n"
