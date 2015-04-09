@@ -115,3 +115,34 @@ ckan_json <- function(
 
   out
 }
+
+
+# Upload to CKAN
+#   print("Uploading report PDFs to {0}dataset/mpa-reports".format(DC))
+#   [resource_update(d, r["resid"], r["file"], api_key=CKAN) for r in REPORTS]
+#
+#   set_last_updated_fields(p, api_key=CKAN, lub=os.environ["LOGNAME"],
+#                           luo=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+# res = resource_show(res_id)
+# res["state"] = "active"
+# res["last_modified"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+# if os.path.isfile(os.path.join(filedir, filepath)):
+#   r = requests.post("{0}resource_update".format(api_url),
+#                     #data={"id": res_id},
+#                     data=res,
+#                     headers={"Authorization": api_key},
+#                     files=[('upload', file(os.path.join(filedir, filepath)))])
+# print("Uploaded {0}".format(filepath))
+# else:
+#   print("File {0} not found, skipping upload".format(filepath))
+
+
+# r = requests.get("{0}resource_show?id={1}".format(api_url, resource_id))
+# if r.status_code == 200:
+#   return json.loads(r.content)["result"]
+# else:
+#   return None
+
+

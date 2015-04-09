@@ -39,24 +39,40 @@ shinyServer(function(input, output) {
   # Save and upload output
   output$push2ckan <- renderUI({
     r <- package_dict()$resources
+
     if (is.null(r)) return(NULL)
     wellPanel(
       h4("Upload to data catalogue"),
-      selectInput("ckan_pdf", "Choose PDF resource to overwrite with figure",
-                  res2nl(r, "PDF")),
-      selectInput("ckan_r", "Choose text resource to overwrite with R code",
-                  res2nl(r, "TXT")),
-      textInput("api_key", "Paste your own CKAN API key")
+      textInput("api_key", "Paste your own CKAN API key"),
+      conditionalPanel(
+        condition = "input.api_key != ''",
+        selectInput("ckan_pdf", "Choose PDF resource to overwrite with figure",
+                    res2nl(r, "PDF")),
+        selectInput("ckan_r", "Choose text resource to overwrite with R code",
+                    res2nl(r, "TXT")),
+        actionButton("goButton", "Upload")
+        )
     )
   })
 
   # Load data from selected CSV resource, detect date formats
-  data <- reactive({
+  all_data <- reactive({
     x <- input$ckan_csv
     if (is.null(x)) return(NULL)
     d <- get_data(x)
     d
   })
+
+#   res_dict <- reactive({
+#     r <- package_dict()$resources
+#     if (is.null(r)) return(NULL)
+#     list(
+#     pdf = list_filter(r, "id", input$ckan_pdf)[[1]]
+#     txt = list_filter(r, "id", input$ckan_r)[[1]]
+#     )
+#   })
+
+
   # data is now loaded
   #----------------------------------------------------------------------------#
 
@@ -64,7 +80,7 @@ shinyServer(function(input, output) {
   # Inspect and select data to plot
 
   varlists <- reactive({
-    df <- data()
+    df <- all_data()
 
     dv <- names(Filter(function(x){length(x)==2 && x[[1]]=="POSIXct"},
                        setNames(sapply(df, class), names(df))))
@@ -97,10 +113,32 @@ shinyServer(function(input, output) {
                       label = strong("Group data by a factor")),
         conditionalPanel(
           condition = "input.has_groups == true",
-          selectInput("gcol", "Choose grouping variable", v$fv))
+          selectInput("gcol", "Choose grouping variable", v$fv)),
+        checkboxInput(inputId = "subset_data",
+                      value = FALSE,
+                      label = strong("Subset data")),
+        conditionalPanel(
+          condition = "input.subset_data == true",
+          selectInput("scol", "Choose filter variable", v$fv),
+          selectInput("exclude_cases", "Exclude cases", multiple=TRUE,
+            levels(all_data()[[input$scol]])
+          )
+        )
       )
 
     })
+  })
+
+  data <- reactive({
+    d <- all_data()
+    if(is.null(d)) return(NULL)
+
+    if(input$subset_data == TRUE) {
+      d[which(!d[[input$scol]] %in% input$exclude_cases),]
+    } else {
+      d
+    }
+
   })
 
   # Figure is ready to plot
