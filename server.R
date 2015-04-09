@@ -141,9 +141,9 @@ shinyServer(function(input, output) {
     x_max <- max(data()[[input$xcol]])
     dateRangeInput("plot_x_range", "Date range for x axis",
                    start = x_min, end = x_max,
-                   min = as.Date("1900-01-01"), max = as.Date("2015-07-01"),
+                   min = as.Date("1900-01-01"), max = as.Date("2015-06-30"),
                    format = "yyyy-mm-dd", startview = "month",
-                   weekstart = 0, language = "en", separator = " to ")
+                   weekstart = 1, language = "en", separator = " to ")
   })
 
   output$plot_title <- renderUI({ textInput("title", "Figure title") })
@@ -232,6 +232,7 @@ shinyServer(function(input, output) {
     dateformat <- "%Y-%m"
     datebreaks <- "1 year"
     dateminorbreaks <- "3 months"
+    date_range <- as.POSIXct(as.Date(input$plot_x_range))
     simple_aes <- aes_string(x=input$xcol, y=input$ycol)
 
     # Multiple or single data series
@@ -260,6 +261,7 @@ shinyServer(function(input, output) {
       geom_point_text +
       labs(title=input$title, x=input$x_label, y=input$y_label) +
       scale_x_datetime(labels=date_format(dateformat),
+                       limits=date_range,
                        breaks=date_breaks(datebreaks),
                        minor_breaks=dateminorbreaks) +
       mpa_theme()
@@ -301,6 +303,7 @@ shinyServer(function(input, output) {
     # Reusable code fragment --------------------------------------------------#
     aesthetic <- paste0("aes(x=", input$xcol, ", y=", input$ycol, ")")
     pd <- paste0("position=position_dodge(", input$pd,")")
+    date_range <- as.POSIXct(as.Date(input$plot_x_range))
 
     # Optional moving average
     if (input$add_moving_average == T){
@@ -344,7 +347,9 @@ shinyServer(function(input, output) {
       geom_point_text,
       geom_line_text,
       "  labs(title='",input$title,"', x='",input$x_label,"', y='",input$y_label,"') +\n",
-      "  scale_x_datetime(labels=date_format('%Y-%m'), breaks='1 year', minor_breaks='3 months') +\n",
+      "  scale_x_datetime(labels=date_format('%Y-%m'),\n",
+      "    limits=c(as.POSIXct('", date_range[1], "'), as.POSIXct('", date_range[2], "')),\n",
+      "    breaks='1 year', minor_breaks='3 months') +\n",
       geom_smooth_text,
       mpa_theme_text(),
 
