@@ -16,6 +16,7 @@ shinyUI(
           uiOutput("plot_x_range"),
           uiOutput("plot_labels"),
           uiOutput("moving_average"),
+          uiOutput("qcc"),
           uiOutput("hline"),
           uiOutput("legend")
         ), # /wellPanel

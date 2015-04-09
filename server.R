@@ -5,6 +5,7 @@ shinyServer(function(input, output) {
   # Select data
 
   datasets <- reactive({
+    # http://internal-data.dpaw.wa.gov.au/api/3/action/tag_show?id=format_csv_ts
     x <- ckan_json(api_call="tag_show", oid="format_csv_ts")
     if (is.null(x)) return(NULL)
     x$packages
@@ -51,7 +52,7 @@ shinyServer(function(input, output) {
         selectInput("ckan_r", "Choose text resource to overwrite with R code",
                     res2nl(r, "TXT")),
         actionButton("goButton", "Upload")
-        )
+      )
     )
   })
 
@@ -63,14 +64,14 @@ shinyServer(function(input, output) {
     d
   })
 
-#   res_dict <- reactive({
-#     r <- package_dict()$resources
-#     if (is.null(r)) return(NULL)
-#     list(
-#     pdf = list_filter(r, "id", input$ckan_pdf)[[1]]
-#     txt = list_filter(r, "id", input$ckan_r)[[1]]
-#     )
-#   })
+  #   res_dict <- reactive({
+  #     r <- package_dict()$resources
+  #     if (is.null(r)) return(NULL)
+  #     list(
+  #     pdf = list_filter(r, "id", input$ckan_pdf)[[1]]
+  #     txt = list_filter(r, "id", input$ckan_r)[[1]]
+  #     )
+  #   })
 
 
   # data is now loaded
@@ -121,7 +122,7 @@ shinyServer(function(input, output) {
           condition = "input.subset_data == true",
           selectInput("scol", "Choose filter variable", v$fv),
           selectInput("exclude_cases", "Exclude cases", multiple=TRUE,
-            levels(all_data()[[input$scol]])
+                      levels(all_data()[[input$scol]])
           )
         )
       )
@@ -185,6 +186,17 @@ shinyServer(function(input, output) {
       )
     )
   })
+
+  output$qcc <- renderUI({
+    wellPanel(
+
+      checkboxInput(inputId = "plot_qcc",
+                    value = FALSE,
+                    label = strong("Add QCC limits"))
+    )
+  })
+
+
 
   output$hline <- renderUI({
     wellPanel(
@@ -295,6 +307,21 @@ shinyServer(function(input, output) {
       # Optional hline
       if (input$add_hline == T){
         g <- g + geom_hline(aes_string(yintercept=input$hline_y))
+      }
+
+      if (input$plot_qcc == T){
+        ym <- mean(df[[input$ycol]], na.rm=T)
+        ysd <- sd(df[[input$ycol]], na.rm=T)
+        xmax <- max(df[[input$xcol]])
+
+        g <- g +
+          geom_hline(aes_string(yintercept=ym), label=round(ym, digits=0)) +
+          # geom_hline(aes_string(yintercept=ym+ysd), linetype="dashed") +
+          # geom_hline(aes_string(yintercept=ym-ysd), linetype="dashed") +
+          geom_hline(aes_string(yintercept=ym+2*ysd), linetype="dotted", col="orange") +
+          geom_hline(aes_string(yintercept=ym-2*ysd), linetype="dotted", col="orange") +
+          geom_hline(aes_string(yintercept=ym+3*ysd), linetype=4, col="red") +
+          geom_hline(aes_string(yintercept=ym-3*ysd), linetype=4, col="red")
       }
 
       g
