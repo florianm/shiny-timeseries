@@ -22,34 +22,30 @@ shinyServer(function(input, output) {
   })
 
   package_dict <- reactive({
-    ckan_json(api_call="package_show", oid=input$ckan_package)
-
-    # works on cmdline, not here - why?
-    # list_filter(datasets(), "id", input$ckan_package)
+    # ckan_json(api_call="package_show", oid=input$ckan_package)
+    list_filter(datasets(), "id", input$ckan_package)[[1]]
   })
 
   # Let user select CSV from resources
   output$ckan_csv <- renderUI({
     withProgress(message = 'Shlorping data...', value = 0, {
-      p <- package_dict()
-      r <- p$resources
+      r <- package_dict()$resources
       if (is.null(r)) return(NULL)
-      selectInput("ckan_csv",
-                  "Choose CSV resource to load data from",
+      selectInput("ckan_csv", "Choose CSV resource to load data from",
                   res2nl(r, "CSV"))
     })
   })
 
   # Save and upload output
   output$push2ckan <- renderUI({
-    p <- package_dict()
-    if (is.null(p)) return(NULL)
+    r <- package_dict()$resources
+    if (is.null(r)) return(NULL)
     wellPanel(
       h4("Upload to data catalogue"),
       selectInput("ckan_pdf", "Choose PDF resource to overwrite with figure",
-                  res2nl(p$resources, "PDF")),
+                  res2nl(r, "PDF")),
       selectInput("ckan_r", "Choose text resource to overwrite with R code",
-                  res2nl(p$resources, "TXT")),
+                  res2nl(r, "TXT")),
       textInput("api_key", "Paste your own CKAN API key")
     )
   })
@@ -311,11 +307,10 @@ shinyServer(function(input, output) {
       "dcn <- c('date', 'Date') # Date column names\n",
       "df[cn %in% dcn] <- lapply(\n",
       "  df[cn %in% dcn],\n",
-      "  function(x){\n",
-      "    x<- lubridate::parse_date_time(",
-      "x, orders=c('YmdHMSz', 'YmdHMS','Ymd','dmY'), tz='Australia/Perth')\n",
-      "  }\n",
-      ")\n\n",
+      "  function(x){x<- lubridate::parse_date_time(",
+      "x, orders=c('YmdHMSz', 'YmdHMS','Ymd','dmY'), tz='Australia/Perth')}\n",
+      ")\n",
+      "names(df) <- capitalize(names(df))\n\n",
 
       "pdf('", input$output_filename,".pdf', height = 5, width = 7)\n\n",
 
