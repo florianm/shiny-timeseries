@@ -16,6 +16,7 @@ shinyUI(
 
         wellPanel(
           h4("Plot Data"),
+          uiOutput("plot_x_range"),
           uiOutput("plot_title"),
           uiOutput("plot_ylab"),
           uiOutput("plot_xlab"),

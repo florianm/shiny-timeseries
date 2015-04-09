@@ -44,40 +44,28 @@ get_data <- function(url,
 ){
   df <- read.table(url, sep=',', header=T, stringsAsFactors=T)
 
-  # Option 1
+  ## Alternative
   #   df<- cbind(
   #     lapply(select(df, matches("[Dd]ate")),
   #            function(x){x<- lubridate::parse_date_time(x, orders=ldo, tz=ltz)}),
   #     select(df, -matches("[Dd]ate")))
 
-  # Option 2
   cn <- names(df)
   df[cn %in% dcn] <- lapply(
     df[cn %in% dcn],
     function(x){x<- lubridate::parse_date_time(x, orders=ldo, tz=ltz)}
   )
 
-  # Option 3
-#   for (i in 1:length(cn)){
-#     if (cn[i] %in% dcn){
-#       df[cn[i]] <- lubridate::parse_date_time(df[cn[i]], orders=ldo, tz=ltz)}
-#   }
-
   df
 }
 
-#' Filter CKAN package$resources loaded as R list by file type
+#' Filter a list of lists by a key matching a given value
 #'
-#' @param resource_dict A CKAN package$resources JSON dict, loaded as R list
-#' @filetype_string The file type as string, e.g. "CSV", "PDF", "TXT"
-#' @return The resource_dict with only those resources matching the file type
-resources_format_filter <- function(resource_dict, filetype_string){
-  Filter(
-    function(resource_dict){
-      length(resource_dict)>0 && resource_dict[["format"]] == filetype_string
-    },
-    resource_dict
-  )
+#' @param lol An R list of lists, e.g. a JSON dict
+#' @param key The key to filter by
+#' @param val The value to match against
+list_filter <- function(lol, key, val){
+  Filter(function(lol){length(lol)>0 && lol[[key]] == val}, lol)
 }
 
 #' Make named list (name=url) from CKAN resource dict filtered by file type
@@ -86,7 +74,7 @@ resources_format_filter <- function(resource_dict, filetype_string){
 #' @filetype_string The file type as string, e.g. "CSV", "PDF", "TXT"
 #' @return A named list of CKAN resource names (as keys) and URLs (as values)
 res2nl <- function(resource_dict, filetype_string){
-  rr <- resources_format_filter(resource_dict, filetype_string)
+  rr <- list_filter(resource_dict, "format", filetype_string)
   i <- setNames(lapply(rr, function(x){x$url}),
                 lapply(rr, function(x){x$name}))
 }

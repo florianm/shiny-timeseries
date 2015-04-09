@@ -4,61 +4,63 @@ shinyServer(function(input, output) {
   #----------------------------------------------------------------------------#
   # Select data
 
+  #' A CKAN API response of datasets (packages) matching a tag "format_csv_ts"
+  #'
+  #' @return An R list of lists of all packages (with nested resources)
+  #' matching the tag
+  datasets <- reactive({
+    x <- ckan_json(api_call="tag_show", oid="format_csv_ts")$packages
+    if (is.null(x)) return(NULL); x
+  })
+
   # Query CKAN for packages with tag "format_csv_ts"
   output$ckan_package <- renderUI({
-    d <- ckan_json(api_call="tag_show", oid="format_csv_ts")
+    d <- datasets()
     if (is.null(d)) return(NULL)
-    items <- setNames(
-      lapply(d$packages, function(x){x$id}),
-      lapply(d$packages, function(x){x$title}))
-    selectInput("ckan_package",
-                "Choose dataset (select or type)",
-                items)
+    items <- setNames(lapply(d, function(x){x$id}),
+                      lapply(d, function(x){x$title}))
+    selectInput("ckan_package", "Choose dataset (select or type)", items)
   })
 
   package_dict <- reactive({
-    ckan_json(api_call="package_show", oid=input$ckan_package)
-  })
-
-  # Get resources of CKAN once as dict
-  resource_dict <- reactive ({
-    d <- package_dict()
-    if (is.null(d)) return(NULL)
-    d$resources
+    x <- ckan_json(api_call="package_show", oid=input$ckan_package)
+    if (is.null(x)) return(NULL); x
+    # or:
+    # x <- list_filter(datasets(), "id", input$ckan_package)
   })
 
   # Let user select CSV from resources
   output$ckan_csv <- renderUI({
-    r <- resource_dict()
-    if (is.null(r)) return(NULL)
+    p <- package_dict()
+    if (is.null(p)) return(NULL)
     selectInput("ckan_csv",
                 "Choose CSV resource to load data from",
-                res2nl(r, "CSV"))
+                res2nl(p$resources, "CSV"))
   })
 
   # Let user select PDF resource to overwrite with new figure
   output$ckan_pdf <- renderUI({
-    r <- resource_dict()
-    if (is.null(r)) return(NULL)
+    p <- package_dict()
+    if (is.null(p)) return(NULL)
     selectInput("ckan_pdf",
                 "Choose PDF resource to overwrite with figure",
-                res2nl(r, "PDF"))
+                res2nl(p$resources, "PDF"))
   })
 
   # Let user select R code resource to overwrite with R code for figure
   output$ckan_r <- renderUI({
-    r <- resource_dict()
-    if (is.null(r)) return(NULL)
+    p <- package_dict()
+    if (is.null(p)) return(NULL)
     selectInput("ckan_r",
                 "Choose text resource to overwrite with R code",
-                res2nl(r, "TXT"))
+                res2nl(p$resources, "TXT"))
   })
 
   # Load data from selected CSV resource, detect date formats
   data <- reactive({
-    if (is.null(input$ckan_csv)) return(NULL)
-    get_data(input$ckan_csv)
-  })
+    x <- get_data(input$ckan_csv)
+    if (is.null(x)) return(NULL); x
+    })
   # data is now loaded
   #----------------------------------------------------------------------------#
 
@@ -114,15 +116,15 @@ shinyServer(function(input, output) {
 
   # Let user choose whether to draw multiple data series
   output$has_groups <- renderUI({
-      checkboxInput(inputId = "has_groups",
-                    value = FALSE,
-                    label = strong("Group data by a factor"))
+    checkboxInput(inputId = "has_groups",
+                  value = FALSE,
+                  label = strong("Group data by a factor"))
   })
 
   # Let user select factor variable for multiple data series
   output$gcol <- renderUI({
     conditionalPanel(condition = "input.has_groups == true",
-      selectInput("gcol", "Choose grouping variable", factorvars())
+                     selectInput("gcol", "Choose grouping variable", factorvars())
     )
   })
   #
@@ -132,6 +134,16 @@ shinyServer(function(input, output) {
   # Plotting parameters
   #
   # User submitted parameters for plot
+  output$plot_x_range <- renderUI({
+    x_min <- min(data()[[input$xcol]])
+    x_max <- max(data()[[input$xcol]])
+    dateRangeInput("plot_x_range", "Date range for x axis",
+                   start = x_min, end = x_max,
+                   min = as.Date("1900-01-01"), max = as.Date("2015-07-01"),
+                   format = "yyyy-mm-dd", startview = "month",
+                   weekstart = 0, language = "en", separator = " to ")
+  })
+
   output$plot_title <- renderUI({ textInput("title", "Figure title") })
   output$plot_ylab <- renderUI({ textInput("y_label", "Y axis label") })
   output$plot_xlab <- renderUI({ textInput("x_label", "X axis label") })
@@ -153,9 +165,11 @@ shinyServer(function(input, output) {
                   value = FALSE)
   })
   output$number_smooth_points <- renderUI({
-    sliderInput(inputId = "number_smooth_points",
-                label = "Smoothing window (number of data points for moving average)",
-                min = 0, max = 200, value = 80, step = 5)
+    conditionalPanel(condition = "input.add_moving_average == true",
+                     sliderInput(inputId = "number_smooth_points",
+                                 label = "Smoothing window size (number of data points for moving average)",
+                                 min = 0, max = 200, value = 80, step = 5)
+    )
   })
 
   output$legend_title <- renderUI({ textInput("legend_title", "Legend Title") })
@@ -196,14 +210,14 @@ shinyServer(function(input, output) {
 
   mpa_theme_text <- reactive({
     paste0(
-    "  theme(\n",
-    "    axis.text.x = element_text(size=", input$label_font_size, "),\n",
-    "    axis.text.y = element_text(size=", input$label_font_size, "),\n",
-    "    axis.title.x = element_text(size=", input$label_font_size, "),\n",
-    "    axis.title.y = element_text(size=", input$label_font_size, "),\n",
-    "    legend.position = '",input$legend_position,"'\n",
-    "  )\n"
-  )
+      "  theme(\n",
+      "    axis.text.x = element_text(size=", input$label_font_size, "),\n",
+      "    axis.text.y = element_text(size=", input$label_font_size, "),\n",
+      "    axis.title.x = element_text(size=", input$label_font_size, "),\n",
+      "    axis.title.y = element_text(size=", input$label_font_size, "),\n",
+      "    legend.position = '",input$legend_position,"'\n",
+      "  )\n"
+    )
   })
 
   plot_ggplot <- reactive({
@@ -225,7 +239,7 @@ shinyServer(function(input, output) {
                    group=input$gcol, shape=input$gcol, col=input$gcol),
         position=positiondodge,
         size=pointsize
-        )
+      )
       geom_line_text <- geom_line(
         aes_string(x=input$xcol, y=input$ycol,
                    group=input$gcol, shape=input$gcol, col=input$gcol),
@@ -293,7 +307,7 @@ shinyServer(function(input, output) {
     # Multiple or single data series
     if (!is.null(input$gcol) && input$has_groups == TRUE) {
       aes_grp <- paste0("aes(x=", input$xcol, ", y=", input$ycol,
-        ", group=", input$gcol, ", shape=", input$gcol, ", col=", input$gcol, ")")
+                        ", group=", input$gcol, ", shape=", input$gcol, ", col=", input$gcol, ")")
       geom_point_text <- paste0("geom_point(", aes_grp, ", ", pd,", size=2) +\n")
       geom_line_text <- paste0("geom_line(", aes_grp, ",\n", pd, ") +\n")
     } else {

@@ -1,8 +1,5 @@
 #' Test script for developing timeseries analysis and visualisation
 #'
-library(ggplot2)
-library(plyr)
-library(lubridate)
 
 # Data cleaning
 # Asset in situ seawater temperature
