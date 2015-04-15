@@ -109,21 +109,17 @@ shinyServer(function(input, output) {
       wellPanel(
         selectInput("ycol", "Choose Y variable", v$nv),
         selectInput("xcol", "Choose X variable", v$dv),
-        checkboxInput(inputId = "has_groups",
-                      value = FALSE,
-                      label = strong("Group data by a factor")),
-        conditionalPanel(
+        checkboxInput("has_groups", strong("Group data by a factor"), value = F),
+        shiny::conditionalPanel(
           condition = "input.has_groups == true",
-          selectInput("gcol", "Choose grouping variable", v$fv)),
-        checkboxInput(inputId = "subset_data",
-                      value = FALSE,
-                      label = strong("Subset data")),
+          selectInput("gcol", "Choose grouping variable", v$fv)
+          ),
+        checkboxInput("subset_data", strong("Subset data"), value = F),
         conditionalPanel(
           condition = "input.subset_data == true",
           selectInput("scol", "Choose filter variable", v$fv),
-          selectInput("exclude_cases", "Exclude cases", multiple=TRUE,
-                      levels(all_data()[[input$scol]])
-          )
+          selectInput("exclude_cases", "Exclude cases", multiple=T,
+                      levels(all_data()[[input$scol]]))
         )
       )
 

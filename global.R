@@ -43,7 +43,7 @@ require(dplyr) || install.packages("dplyr")
 get_data <- function(url,
                      ldo=c("YmdHMSz", "YmdHMS","Ymd","dmY"),
                      ltz="Australia/Perth",
-                     dcn=c("date", "Date")
+                     dcn=c("date", "Date", "date.start", "date.end")
 ){
   df <- read.table(url, sep=',', header=T, stringsAsFactors=T)
 
