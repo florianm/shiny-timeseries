@@ -23,6 +23,9 @@ require(lubridate) || install.packages("lubridate")
 require(tidyr) || install.packages("tidyr")
 require(dplyr) || install.packages("dplyr")
 
+# Constants
+CKAN_URL = "http://internal-data.dpaw.wa.gov.au/"
+
 
 #------------------------------------------------------------------------------#
 # Data loading
@@ -50,7 +53,7 @@ get_data <- function(url,
   ## Alternative
   #   df<- cbind(
   #     lapply(select(df, matches("[Dd]ate")),
-  #            function(x){x<- lubridate::parse_date_time(x, orders=ldo, tz=ltz)}),
+  #       function(x){x<- lubridate::parse_date_time(x, orders=ldo, tz=ltz)}),
   #     select(df, -matches("[Dd]ate")))
 
   cn <- names(df)
@@ -58,7 +61,7 @@ get_data <- function(url,
     df[cn %in% dcn],
     function(x){x<- lubridate::parse_date_time(x, orders=ldo, tz=ltz)}
   )
-  names(df) <- capitalize(names(df))
+  names(df) <- Hmisc::capitalize(names(df))
   df
 }
 
@@ -99,7 +102,7 @@ res2nl <- function(resource_dict, filetype_string){
 #' @import rjson
 #' @export
 ckan_json <- function(
-  base_url="http://internal-data.dpaw.wa.gov.au/",
+  base_url=CKAN_URL,
   api_call="package_show",
   oid='',
   debug=FALSE){

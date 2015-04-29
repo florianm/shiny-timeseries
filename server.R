@@ -374,6 +374,7 @@ shinyServer(function(input, output) {
       "require(ggplot2) || install.packages('ggplot2')\n",
       "require(lubridate) || install.packages('lubridate')\n",
       "require(scales) || install.packages('scales')\n\n",
+      "require(Hmisc) || install.packages('Hmisc')\n\n",
       "csv_url <- '", input$ckan_csv, "'\n",
       "df <-read.table(csv_url, sep=',', header=T, stringsAsFactors=T)\n",
       "# Convert only columns called 'date' or 'Date' into POSIXct dates\n",
