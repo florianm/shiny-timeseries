@@ -166,7 +166,9 @@ shinyServer(function(input, output) {
       #sliderInput(inputId = "pd", label = "Position dodge",
       #            min = 0, max = 1, value = 0, step = 0.05)
       sliderInput(inputId = "label_font_size", label = "Label font size",
-                  min = 6, max = 24, value = 14, step = 1)
+                  min = 6, max = 24, value = 10, step = 1),
+      sliderInput(inputId = "label_rotation", label = "Label rotation",
+                  min = -45, max = 90, value = 0, step = 45)
     )
   })
 
@@ -222,24 +224,28 @@ shinyServer(function(input, output) {
 
   # output object: ggplot -----------------------------------------------------#
   # The GGplot2 theme for MPA graphs
+  text_pars_x <- reactive({element_text(size=input$label_font_size,
+                                        angle=input$label_rotation)})
   text_pars <- reactive({element_text(size=input$label_font_size)})
   title_pars <- reactive({element_text(lineheight=.8, face="bold")})
   mpa_theme <- reactive({
-    theme(axis.text.x = text_pars(),
+    theme(axis.text.x = text_pars_x(),
           axis.text.y = text_pars(),
-          axis.title.x= text_pars(),
-          axis.title.y= text_pars(),
+          axis.title.x = text_pars(),
+          axis.title.y = text_pars(),
           plot.title = title_pars(),
-          legend.title=text_pars(),
-          legend.text=text_pars(),
-          legend.position=input$legend_position
+          legend.title = text_pars(),
+          legend.text = text_pars(),
+          legend.position = input$legend_position
+
     )
   })
 
   mpa_theme_text <- reactive({
     paste0(
       "  theme(\n",
-      "    axis.text.x = element_text(size=", input$label_font_size, "),\n",
+      "    axis.text.x = element_text(size=", input$label_font_size,
+      ", angle=", input$label_rotation,"),\n",
       "    axis.text.y = element_text(size=", input$label_font_size, "),\n",
       "    axis.title.x = element_text(size=", input$label_font_size, "),\n",
       "    axis.title.y = element_text(size=", input$label_font_size, "),\n",
@@ -379,7 +385,7 @@ shinyServer(function(input, output) {
       "df <-read.table(csv_url, sep=',', header=T, stringsAsFactors=T)\n",
       "# Convert only columns called 'date' or 'Date' into POSIXct dates\n",
       "cn <- names(df)\n",
-      "dcn <- c('date', 'Date') # Date column names\n",
+      "dcn <- c('date', 'Date', 'date.start', 'date.end') # Date column names\n",
       "df[cn %in% dcn] <- lapply(\n",
       "  df[cn %in% dcn],\n",
       "  function(x){x<- lubridate::parse_date_time(",
