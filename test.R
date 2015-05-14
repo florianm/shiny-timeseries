@@ -63,6 +63,8 @@ filename <- "datarsmpinsitutemp.csv"
 d <- get_data(url)
 summary(d)
 lapply(d, class)
+write.table(d, file=filename, sep=",", row.names=F, col.names=T, quote=T)
+
 dplyr::rename(d, Date=date)
 
 d2 <- tidyr::gather(d[1:4], "site", "temperature", 2:4)
