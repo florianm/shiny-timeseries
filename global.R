@@ -19,6 +19,10 @@ require(lubridate) || install.packages("lubridate")
 # require(tidyr) || install.packages("tidyr")
 # require(dplyr) || install.packages("dplyr")
 
+# CKAN API
+require(devtools) || install.packages("devtools")
+require(ckanr) || devtools::install_github("ropensci/ckanr")
+
 
 #------------------------------------------------------------------------------#
 # Data loading
