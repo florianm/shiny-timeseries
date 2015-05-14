@@ -1,9 +1,13 @@
 #' Library imports, helper functions, global variables
 
 library(shiny)
+# require(shinyIncubator) || install.packages("shinyIncubator")
 
 # rendering
 require(markdown) || install.packages("markdown")
+require(whisker) || install.packages("whisker")
+require(Hmisc) || install.packages("Hmisc")
+
 
 # plotting
 require(ggplot2) || install.packages("ggplot2")
@@ -16,8 +20,11 @@ require(rjson) || install.packages("rjson")
 
 # utilities
 require(lubridate) || install.packages("lubridate")
-# require(tidyr) || install.packages("tidyr")
-# require(dplyr) || install.packages("dplyr")
+require(tidyr) || install.packages("tidyr")
+require(dplyr) || install.packages("dplyr")
+
+# Constants
+CKAN_URL = "http://internal-data.dpaw.wa.gov.au/"
 
 # CKAN API
 require(devtools) || install.packages("devtools")
@@ -30,7 +37,8 @@ require(ckanr) || devtools::install_github("ropensci/ckanr")
 #' Load CSV data from a URL and guess variable classes
 #'
 #' Reads numbers as numeric
-#' Reads strings as date if matching an ISO8601 date format, else as factor
+#' Reads strings as factor
+#' Converts column with names indicating date format ("Date", "date") to POSIXct
 #' Will result in either numeric, POSIXct, or string/factor classes
 #'
 #' Date is parsed with lubridate::parse_date_time
@@ -38,70 +46,48 @@ require(ckanr) || devtools::install_github("ropensci/ckanr")
 #' @param url A valid URL to a CSV file
 #' @param ldo Lubridate date orders, default: "YmdHMSz", "YmdHMS","Ymd","dmY"
 #' @param ltz Lubridate time zone, default: "Australia/Perth"
+#' @param dcn Date column names, default: "date", "Date"
 get_data <- function(url,
                      ldo=c("YmdHMSz", "YmdHMS","Ymd","dmY"),
-                     ltz="Australia/Perth"){
-  as.data.frame(
-    lapply(
-      read.table(url, sep=',', header=T, stringsAsFactors=T),
-      function(x) {
-        if(is.factor(x)){
-            # insert test whether factor x really is a date
-            x <- lubridate::parse_date_time(x, orders=ldo, tz=ltz)
-        }
-        x
-      }))
-}
+                     ltz="Australia/Perth",
+                     dcn=c("date", "Date", "date.start", "date.end")
+){
+  df <- read.table(url, sep=',', header=T, stringsAsFactors=T)
 
-#' From CKAN package$resources loaded as R list, return items matching format_string
-#'
-#' @param res_list A CKAN package$resources JSON dict, loaded as R list
-#' @param format_string The desired format, e.g. "CSV", "PDF", "TXT"
-resources_format_filter <- function(res_list, format_string){
-  Filter(
-    function(res_list){
-      length(res_list)>0 && res_list[["format"]] == format_string
-    },
-    res_list
+  ## Alternative
+  #   df<- cbind(
+  #     lapply(select(df, matches("[Dd]ate")),
+  #       function(x){x<- lubridate::parse_date_time(x, orders=ldo, tz=ltz)}),
+  #     select(df, -matches("[Dd]ate")))
+
+  cn <- names(df)
+  df[cn %in% dcn] <- lapply(
+    df[cn %in% dcn],
+    function(x){x<- lubridate::parse_date_time(x, orders=ldo, tz=ltz)}
   )
+  names(df) <- Hmisc::capitalize(names(df))
+  df
 }
 
-#------------------------------------------------------------------------------#
-# The GGplot2 theme for MPA graphs
-et14 <- element_text(size=14)
-mpa_theme <- theme(axis.text.x = et14,
-                   axis.text.y = et14,
-                   axis.title.x= et14,
-                   axis.title.y= et14,
-                   plot.title = element_text(lineheight=.8, face="bold"),
-                   #axis.line=element_line(colour="black"),
-                   #panel.grid.minor = element_blank(),
-                   #panel.grid.major = element_blank(),
-                   #panel.border=element_blank(),
-                   #panel.background=element_blank(),
-                   legend.justification=c(1,10),
-                   legend.position=c(1,10),
-                   legend.title = element_blank(),
-                   legend.key = element_blank())
+#' Filter a list of lists by a key matching a given value
+#'
+#' @param lol An R list of lists, e.g. a JSON dict
+#' @param key The key to filter by
+#' @param val The value to match against
+list_filter <- function(lol, key, val){
+  Filter(function(lol){length(lol)>0 && lol[[key]] == val}, lol)
+}
 
-mpa_theme_text <- paste(
-  "  theme(",
-  "    axis.text.x = element_text(size=14),",
-  "    axis.text.y = element_text(size=14),",
-  "    axis.title.x=element_text(size=14),",
-  "    axis.title.y=element_text(size=14),",
-  #   "    axis.line=element_line(colour='black'),",
-  #   "    panel.grid.minor = element_blank(),",
-  #   "    panel.grid.major = element_blank(),",
-  #   "    panel.border=element_blank(),",
-  #   "    panel.background=element_blank(),",
-  "    legend.justification=c(1,10),",
-  "    legend.position=c(1,10), # Position legend in top right",
-  "    legend.title = element_blank(),",
-  "    legend.key = element_blank()",
-  "  )",
-  sep="\n"
-)
+#' Make named list (name=url) from CKAN resource dict filtered by file type
+#'
+#' @param resource_dict A CKAN package$resources JSON dict, loaded as R list
+#' @filetype_string The file type as string, e.g. "CSV", "PDF", "TXT"
+#' @return A named list of CKAN resource names (as keys) and URLs (as values)
+res2nl <- function(resource_dict, filetype_string){
+  rr <- list_filter(resource_dict, "format", filetype_string)
+  i <- setNames(lapply(rr, function(x){x$url}),
+                lapply(rr, function(x){x$name}))
+}
 
 #------------------------------------------------------------------------------#
 # CKAN API helpers
@@ -120,7 +106,7 @@ mpa_theme_text <- paste(
 #' @import rjson
 #' @export
 ckan_json <- function(
-  base_url="http://internal-data.dpaw.wa.gov.au/",
+  base_url=CKAN_URL,
   api_call="package_show",
   oid='',
   debug=FALSE){
@@ -136,3 +122,34 @@ ckan_json <- function(
 
   out
 }
+
+
+# Upload to CKAN
+#   print("Uploading report PDFs to {0}dataset/mpa-reports".format(DC))
+#   [resource_update(d, r["resid"], r["file"], api_key=CKAN) for r in REPORTS]
+#
+#   set_last_updated_fields(p, api_key=CKAN, lub=os.environ["LOGNAME"],
+#                           luo=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+# res = resource_show(res_id)
+# res["state"] = "active"
+# res["last_modified"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+# if os.path.isfile(os.path.join(filedir, filepath)):
+#   r = requests.post("{0}resource_update".format(api_url),
+#                     #data={"id": res_id},
+#                     data=res,
+#                     headers={"Authorization": api_key},
+#                     files=[('upload', file(os.path.join(filedir, filepath)))])
+# print("Uploaded {0}".format(filepath))
+# else:
+#   print("File {0} not found, skipping upload".format(filepath))
+
+
+# r = requests.get("{0}resource_show?id={1}".format(api_url, resource_id))
+# if r.status_code == 200:
+#   return json.loads(r.content)["result"]
+# else:
+#   return None
+
+
