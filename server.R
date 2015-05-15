@@ -6,7 +6,8 @@ shinyServer(function(input, output) {
 
   datasets <- reactive({
     # http://internal-data.dpaw.wa.gov.au/api/3/action/tag_show?id=format_csv_ts
-    x <- ckan_json(api_call="tag_show", oid="format_csv_ts")
+    # x <- ckan_json(api_call="tag_show", oid="format_csv_ts")
+    x <- ckanr::tag_show("format_csv_ts")
     if (is.null(x)) return(NULL)
     x$packages
   })
@@ -51,7 +52,7 @@ shinyServer(function(input, output) {
                     res2nl(r, "PDF")),
         selectInput("ckan_r", "Choose text resource to overwrite with R code",
                     res2nl(r, "TXT")),
-        actionButton("goButton", "Upload")
+        actionButton("push2ckanButton", "Upload")
       )
     )
   })
@@ -60,7 +61,9 @@ shinyServer(function(input, output) {
   all_data <- reactive({
     x <- input$ckan_csv
     if (is.null(x)) return(NULL)
-    d <- get_data(x)
+    data_url <- ckanr::resource_show(x)$url
+    #data_url <- list_filter(package_dict()$resources, "id", x)
+    d <- get_data(data_url)
     d
   })
 
@@ -436,6 +439,31 @@ shinyServer(function(input, output) {
       downloadButton("downloadPdf", "Download PDF"),
       downloadButton("downloadCode", "Download R Code")
     )
+  })
+
+  observeEvent(input$push2ckanButton, function() {
+    withProgress(message = 'Uploading...', value = 0, {
+      # PDF graph
+      pdf_file = tempfile(input$output_filename, fileext=".pdf")
+      pdf(pdf_file, height = 5, width = 7);
+      print(plot_ggplot());
+      dev.off()
+      ckanr::resource_update(input$ckan_pdf, pdf_file,
+                             url=CKAN_URL, key=input$api_key)
+
+      # R code
+      txt_file = tempfile(input$output_filename, fileext=".txt")
+      writeLines(plot_code(), txt_file)
+      ckanr::resource_update(input$ckan_r, txt_file,
+                             url=CKAN_URL, key=input$api_key)
+    })
+  })
+
+  output$ckansettings <- renderPrint({
+    paste("PDF ID", input$ckan_pdf, "Dataset id", input$ckan_csv)
+    #input$ckan_pdf,
+    #input$ckan_r
+
   })
 
 })

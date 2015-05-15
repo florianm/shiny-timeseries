@@ -23,13 +23,17 @@ require(lubridate) || install.packages("lubridate")
 require(tidyr) || install.packages("tidyr")
 require(dplyr) || install.packages("dplyr")
 
-# Constants
-CKAN_URL = "http://internal-data.dpaw.wa.gov.au/"
 
 # CKAN API
 require(devtools) || install.packages("devtools")
 require(ckanr) || devtools::install_github("ropensci/ckanr")
 
+#------------------------------------------------------------------------------#
+# ckanR setup
+
+# Constants
+CKAN_URL = "http://internal-data.dpaw.wa.gov.au/"
+set_ckanr_url(CKAN_URL)
 
 #------------------------------------------------------------------------------#
 # Data loading
@@ -85,7 +89,7 @@ list_filter <- function(lol, key, val){
 #' @return A named list of CKAN resource names (as keys) and URLs (as values)
 res2nl <- function(resource_dict, filetype_string){
   rr <- list_filter(resource_dict, "format", filetype_string)
-  i <- setNames(lapply(rr, function(x){x$url}),
+  i <- setNames(lapply(rr, function(x){x$id}),
                 lapply(rr, function(x){x$name}))
 }
 
