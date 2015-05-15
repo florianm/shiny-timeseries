@@ -30,7 +30,7 @@ shinyServer(function(input, output) {
 
   # Let user select CSV from resources
   output$ckan_csv <- renderUI({
-    withProgress(message = 'Shlorping data...', value = 0, {
+    withProgress(message = 'Loading data...', value = 0, {
       r <- package_dict()$resources
       if (is.null(r)) return(NULL)
       selectInput("ckan_csv", "Choose CSV resource to load data from",
@@ -45,7 +45,7 @@ shinyServer(function(input, output) {
     if (is.null(r)) return(NULL)
     wellPanel(
       h4("Upload to data catalogue"),
-      textInput("api_key", "Paste your own CKAN API key"),
+      passwordInput("api_key", "Paste your own CKAN API key"),
       conditionalPanel(
         condition = "input.api_key != ''",
         selectInput("ckan_pdf", "Choose PDF resource to overwrite with figure",
@@ -59,12 +59,8 @@ shinyServer(function(input, output) {
 
   # Load data from selected CSV resource, detect date formats
   all_data <- reactive({
-    x <- input$ckan_csv
-    if (is.null(x)) return(NULL)
-    data_url <- ckanr::resource_show(x)$url
-    #data_url <- list_filter(package_dict()$resources, "id", x)
-    d <- get_data(data_url)
-    d
+    if (is.null(input$ckan_csv)) return(NULL)
+    get_data(ckanr::resource_show(input$ckan_csv)$url)
   })
 
   #   res_dict <- reactive({
@@ -104,7 +100,7 @@ shinyServer(function(input, output) {
   })
 
   output$varmap <- renderUI({
-    withProgress(message = 'Fiddling with variables...', value = 0, {
+    withProgress(message = 'Reading variables...', value = 0, {
 
       v <- varlists()
       if (is.null(v)) return(NULL)
@@ -377,6 +373,7 @@ shinyServer(function(input, output) {
       geom_line_text <- paste0("geom_line(", pd,") +\n")
     }
 
+    csv_url <- ckanr::resource_show(input$ckan_csv)$url
     # Final code output -------------------------------------------------------#
     paste0(
       text_instruction(),
@@ -384,7 +381,7 @@ shinyServer(function(input, output) {
       "require(lubridate) || install.packages('lubridate')\n",
       "require(scales) || install.packages('scales')\n\n",
       "require(Hmisc) || install.packages('Hmisc')\n\n",
-      "csv_url <- '", input$ckan_csv, "'\n",
+      "csv_url <- '", csv_url, "'\n",
       "df <-read.table(csv_url, sep=',', header=T, stringsAsFactors=T)\n",
       "# Convert only columns called 'date' or 'Date' into POSIXct dates\n",
       "cn <- names(df)\n",
@@ -444,7 +441,7 @@ shinyServer(function(input, output) {
   observeEvent(input$push2ckanButton, function() {
     withProgress(message = 'Uploading...', value = 0, {
       # PDF graph
-      pdf_file = tempfile(input$output_filename, fileext=".pdf")
+      pdf_file = file.path(tempdir(), paste0(input$output_filename, ".pdf"))
       pdf(pdf_file, height = 5, width = 7);
       print(plot_ggplot());
       dev.off()
@@ -452,7 +449,7 @@ shinyServer(function(input, output) {
                              url=CKAN_URL, key=input$api_key)
 
       # R code
-      txt_file = tempfile(input$output_filename, fileext=".txt")
+      txt_file = file.path(tempdir(), paste0(input$output_filename, ".txt"))
       writeLines(plot_code(), txt_file)
       ckanr::resource_update(input$ckan_r, txt_file,
                              url=CKAN_URL, key=input$api_key)
