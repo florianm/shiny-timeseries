@@ -32,7 +32,7 @@ require(ckanr) || devtools::install_github("ropensci/ckanr")
 # ckanR setup
 
 # Constants
-CKAN_URL = "http://internal-data.dpaw.wa.gov.au/"
+CKAN_URL = "http://data-demo.dpaw.wa.gov.au/"
 set_ckanr_url(CKAN_URL)
 
 #------------------------------------------------------------------------------#
