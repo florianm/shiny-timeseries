@@ -2,10 +2,10 @@
 
 `shiny-timeseries` is a visualisation tool for univariate timeseries data.
 Wrapping up the R code doing all the heavy lifting in a user-friendly web app
-bring mutual benefit:
+brings mutual benefit:
 
-* data consumers can inspect and visualise the data without R coding skills;
-* some standards are enforced by being hard-coded.
+* data analysts can inspect and visualise the data without R coding skills;
+* some data, analysis and layout standards are enforced by being hard-coded.
 
 ## Work flow
 From a pre-configured CKAN data catalogue, the app loads data about all 
