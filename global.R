@@ -15,11 +15,12 @@ require(tidyr) || install.packages("tidyr")
 require(dplyr) || install.packages("dplyr")
 # CKAN API --------------------------------------------------------------------#
 require(devtools) || install.packages("devtools")
-require(ckanr) || devtools::install_github("ropensci/ckanr")
+# devtools::install_github("ropensci/ckanr")
+require(ckanr)
 
 #------------------------------------------------------------------------------#
 # Configuration
-ckanr_setup(url="http://internal-data.dpaw.wa.gov.au/")
+ckanr::ckanr_setup(url="http://internal-data.dpaw.wa.gov.au/")
 
 #------------------------------------------------------------------------------#
 # Data loading
