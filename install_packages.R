@@ -10,10 +10,11 @@ install.packages("lubridate", repos="http://cran.rstudio.com/")
 install.packages("ggplot2", repos="http://cran.rstudio.com/")
 install.packages("qcc", repos="http://cran.rstudio.com/")
 
+# sudo apt-get install libcurl4-openssl-dev
 install.packages("httr", repos="http://cran.rstudio.com/")
 install.packages("rversions", repos="http://cran.rstudio.com/")
 install.packages("RCurl", repos="http://cran.rstudio.com/")
 install.packages("curl", repos="http://cran.rstudio.com/")
 install.packages("devtools", repos="http://cran.rstudio.com/")
-
+library(devtools)
 devtools::install_github("ropensci/ckanr")
