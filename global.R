@@ -1,43 +1,29 @@
 #' Library imports, helper functions, global variables
-
 library(shiny)
 # require(shinyIncubator) || install.packages("shinyIncubator")
-
-# rendering
+# rendering -------------------------------------------------------------------#
 require(markdown) || install.packages("markdown")
 require(whisker) || install.packages("whisker")
 require(Hmisc) || install.packages("Hmisc")
-
-
-# plotting
+# plotting --------------------------------------------------------------------#
 require(ggplot2) || install.packages("ggplot2")
 require(qcc) || install.packages("qcc")
 require(scales) || install.packages("scales")
-
-# web
-require(RCurl) || install.packages("RCurl")
-require(rjson) || install.packages("rjson")
-
-# utilities
+# utilities -------------------------------------------------------------------#
 require(lubridate) || install.packages("lubridate")
 require(tidyr) || install.packages("tidyr")
 require(dplyr) || install.packages("dplyr")
-
-
-# CKAN API
+# CKAN API --------------------------------------------------------------------#
 require(devtools) || install.packages("devtools")
 require(ckanr) || devtools::install_github("ropensci/ckanr")
 
 #------------------------------------------------------------------------------#
-# ckanR setup
-
-# Constants
-CKAN_URL = "http://internal-data.dpaw.wa.gov.au/"
-set_ckanr_url(CKAN_URL)
+# Configuration
+ckanr_setup(url="http://internal-data.dpaw.wa.gov.au/")
 
 #------------------------------------------------------------------------------#
 # Data loading
-
+#
 #' Load CSV data from a URL and guess variable classes
 #'
 #' Reads numbers as numeric
@@ -73,6 +59,9 @@ get_data <- function(url,
   df
 }
 
+#------------------------------------------------------------------------------#
+# Utilities
+#
 #' Filter a list of lists by a key matching a given value
 #'
 #' @param lol An R list of lists, e.g. a JSON dict
@@ -92,68 +81,3 @@ res2nl <- function(resource_dict, filetype_string){
   i <- setNames(lapply(rr, function(x){x$id}),
                 lapply(rr, function(x){x$name}))
 }
-
-#------------------------------------------------------------------------------#
-# CKAN API helpers
-
-#' Return a CKAN API call as JSON dict
-#'
-#' Sends a request to a CKAN API, e.g.:
-#' http://my.ckan.instance.com/api/3/action/package_show?id=MY-DATASET-ID-abcdef-12345
-#'
-#' @param oid the alphanumeric CKAN object (here: dataset) ID or slug, default: ""
-#' @param base_url the base url of the CKAN instance,
-#'   default: "http://internal-data.dpaw.wa.gov.au/"
-#' @param api_call the path to the API function, default: "package_show"
-#' @param debug a flag to toggle debug output to the console, default: FALSE
-#' @return a JSON dict of dataset details (name, notes, tags etc.)
-#' @import rjson
-#' @export
-ckan_json <- function(
-  base_url=CKAN_URL,
-  api_call="package_show",
-  oid='',
-  debug=FALSE){
-
-  url = paste(base_url, "api/3/action/", api_call, "?id=", oid, sep="")
-  if (debug) {print(paste("CKAN API URL to be called:", url))}
-
-  if (url.exists(base_url)) {
-    out <- rjson::fromJSON(getURLContent(url), unexpected.escape="skip")$result
-  } else {
-    out <- NULL
-  }
-
-  out
-}
-
-
-# Upload to CKAN
-#   print("Uploading report PDFs to {0}dataset/mpa-reports".format(DC))
-#   [resource_update(d, r["resid"], r["file"], api_key=CKAN) for r in REPORTS]
-#
-#   set_last_updated_fields(p, api_key=CKAN, lub=os.environ["LOGNAME"],
-#                           luo=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-
-# res = resource_show(res_id)
-# res["state"] = "active"
-# res["last_modified"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-# if os.path.isfile(os.path.join(filedir, filepath)):
-#   r = requests.post("{0}resource_update".format(api_url),
-#                     #data={"id": res_id},
-#                     data=res,
-#                     headers={"Authorization": api_key},
-#                     files=[('upload', file(os.path.join(filedir, filepath)))])
-# print("Uploaded {0}".format(filepath))
-# else:
-#   print("File {0} not found, skipping upload".format(filepath))
-
-
-# r = requests.get("{0}resource_show?id={1}".format(api_url, resource_id))
-# if r.status_code == 200:
-#   return json.loads(r.content)["result"]
-# else:
-#   return None
-
-

@@ -6,7 +6,6 @@ shinyServer(function(input, output) {
 
   datasets <- reactive({
     # http://internal-data.dpaw.wa.gov.au/api/3/action/tag_show?id=format_csv_ts
-    # x <- ckan_json(api_call="tag_show", oid="format_csv_ts")
     x <- ckanr::tag_show("format_csv_ts")
     if (is.null(x)) return(NULL)
     x$packages
@@ -24,7 +23,6 @@ shinyServer(function(input, output) {
   })
 
   package_dict <- reactive({
-    # ckan_json(api_call="package_show", oid=input$ckan_package)
     list_filter(datasets(), "id", input$ckan_package)[[1]]
   })
 
@@ -445,14 +443,12 @@ shinyServer(function(input, output) {
       pdf(pdf_file, height = 5, width = 7);
       print(plot_ggplot());
       dev.off()
-      ckanr::resource_update(input$ckan_pdf, pdf_file,
-                             url=CKAN_URL, key=input$api_key)
+      ckanr::resource_update(input$ckan_pdf, pdf_file, key=input$api_key)
 
       # R code
       txt_file = file.path(tempdir(), paste0(input$output_filename, ".txt"))
       writeLines(plot_code(), txt_file)
-      ckanr::resource_update(input$ckan_r, txt_file,
-                             url=CKAN_URL, key=input$api_key)
+      ckanr::resource_update(input$ckan_r, txt_file, key=input$api_key)
     })
   })
 
