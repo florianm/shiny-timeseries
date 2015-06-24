@@ -1,30 +1,20 @@
-#' Library imports, helper functions, global variables
+#' Imports, config, global functions
 library(shiny)
-# require(shinyIncubator) || install.packages("shinyIncubator")
-# rendering -------------------------------------------------------------------#
-require(markdown) || install.packages("markdown")
-require(whisker) || install.packages("whisker")
-require(Hmisc) || install.packages("Hmisc")
-# plotting --------------------------------------------------------------------#
-require(ggplot2) || install.packages("ggplot2")
-require(qcc) || install.packages("qcc")
-require(scales) || install.packages("scales")
-# utilities -------------------------------------------------------------------#
-require(lubridate) || install.packages("lubridate")
-require(tidyr) || install.packages("tidyr")
-require(dplyr) || install.packages("dplyr")
-# CKAN API --------------------------------------------------------------------#
-require(devtools) || install.packages("devtools")
-# devtools::install_github("ropensci/ckanr")
+require(shinyIncubator)
+require(markdown)
+require(whisker)
+require(scales)
+require(Hmisc)
+require(plyr)
+require(dplyr)
+require(tidyr)
+require(lubridate)
+require(ggplot2)
+require(qcc)
 require(ckanr)
 
-#------------------------------------------------------------------------------#
-# Configuration
-ckanr::ckanr_setup(url="http://internal-data.dpaw.wa.gov.au/")
+ckanr::ckanr_setup(url = "http://internal-data.dpaw.wa.gov.au/")
 
-#------------------------------------------------------------------------------#
-# Data loading
-#
 #' Load CSV data from a URL and guess variable classes
 #'
 #' Reads numbers as numeric
@@ -39,30 +29,25 @@ ckanr::ckanr_setup(url="http://internal-data.dpaw.wa.gov.au/")
 #' @param ltz Lubridate time zone, default: "Australia/Perth"
 #' @param dcn Date column names, default: "date", "Date"
 get_data <- function(url,
-                     ldo=c("YmdHMSz", "YmdHMS","Ymd","dmY"),
-                     ltz="Australia/Perth",
-                     dcn=c("date", "Date", "date.start", "date.end")
+                     ldo = c("YmdHMSz", "YmdHMS","Ymd","dmY"),
+                     ltz = "Australia/Perth",
+                     dcn = c("date", "Date", "date.start", "date.end")
 ){
-  df <- read.table(url, sep=',', header=T, stringsAsFactors=T)
-
-  ## Alternative
+  df <- read.table(url, sep = ',', header = T, stringsAsFactors = T)
   #   df<- cbind(
   #     lapply(select(df, matches("[Dd]ate")),
-  #       function(x){x<- lubridate::parse_date_time(x, orders=ldo, tz=ltz)}),
+  #       function(x){x<- lubridate::parse_date_time(x, orders = ldo, tz = ltz)}),
   #     select(df, -matches("[Dd]ate")))
-
   cn <- names(df)
   df[cn %in% dcn] <- lapply(
     df[cn %in% dcn],
-    function(x){x<- lubridate::parse_date_time(x, orders=ldo, tz=ltz)}
+    function(x){x<- lubridate::parse_date_time(x, orders = ldo, tz = ltz)}
   )
   names(df) <- Hmisc::capitalize(names(df))
   df
 }
 
-#------------------------------------------------------------------------------#
-# Utilities
-#
+
 #' Filter a list of lists by a key matching a given value
 #'
 #' @param lol An R list of lists, e.g. a JSON dict
