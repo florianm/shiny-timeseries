@@ -9,5 +9,11 @@ install.packages("tidyr")
 install.packages("lubridate")
 install.packages("ggplot2")
 install.packages("qcc")
+
+install.packages("httr")
+install.packages("rversions")
+install.packages("RCurl")
+install.packages("curl")
 install.packages("devtools")
+
 devtools::install_github("ropensci/ckanr")
