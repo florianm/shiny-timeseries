@@ -6,7 +6,7 @@ shinyServer(function(input, output) {
 
   datasets <- reactive({
     # http://internal-data.dpaw.wa.gov.au/api/3/action/tag_show?id=format_csv_ts
-    x <- ckanr::tag_show("format_csv_ts")
+    x <- ckanr::tag_show("format_csv_ts", include_datasets=T)
     if (is.null(x)) return(NULL)
     x$packages
   })
