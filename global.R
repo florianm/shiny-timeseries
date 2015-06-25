@@ -11,6 +11,7 @@ require(tidyr)
 require(lubridate)
 require(ggplot2)
 require(qcc)
+require(RCurl)
 require(ckanr)
 
 ckanr::ckanr_setup(url = "http://internal-data.dpaw.wa.gov.au/")

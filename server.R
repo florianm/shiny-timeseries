@@ -335,7 +335,7 @@ shinyServer(function(input, output) {
   text_instruction <- reactive({
     if (is.null(input$ckan_r) ||
           input$ckan_r == "" ||
-          !url.exists(input$ckan_r)) { return(NULL) }
+          !RCurl::url.exists(input$ckan_r)) { return(NULL) }
     paste0("## Reproduce the figure:\n# source('", input$ckan_r, "')\n\n")
   })
 
