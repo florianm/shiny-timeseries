@@ -16,11 +16,6 @@ require(ckanr)
 
 ckanr::ckanr_setup(url = "http://internal-data.dpaw.wa.gov.au/")
 
-install_ckanr <- function(){
-  devtools::install_github("ropensci/ckanr")
-  library(ckanr)
-}
-
 #' Load CSV data from a URL and guess variable classes
 #'
 #' Reads numbers as numeric

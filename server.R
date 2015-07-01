@@ -452,11 +452,6 @@ shinyServer(function(input, output) {
     })
   })
 
-  output$ckanr <- renderUI({
-    actionButton("ckanButton", "Update ckanr library")
-  })
-  observeEvent(input$ckanButton, function(){install_ckanr()})
-
   output$ckansettings <- renderPrint({
     paste("PDF ID", input$ckan_pdf, "Dataset id", input$ckan_csv)
     #input$ckan_pdf,
