@@ -1,14 +1,16 @@
 # What is the Time Series Explorer's intent and purpose?
 This application creates standard time series graphs from compatible data sets
-on our [data catalogue](http://internal-data.dpaw.wa.gov.au/).
+on a CKAN [data catalogue](http://data-demo.dpaw.wa.gov.au/).
 
-The data and figures are used in Marine Science's 
-[annual MPA reporting](http://internal-data.dpaw.wa.gov.au/dataset/mpa-reports).
-Using this application has multiple benefits:
+Having a web app to access, analyse and visualise data has some benefits:
 
-* it saves the authors some leg work,
-* it provides graphs in the format and quality required for MPA reporting,
-* it drives the clean-up and standardisation of data in the catalogue, and
+* it does one job (with a few user-supplied degrees of freedom) properly and 
+according to some standards,
+* it saves data analysts some leg work (by automating the boring bits) and
+frees up their minds to think about the data (and not about R code),
+* it provides graphs in a certain format and quality,
+* it drives the clean-up and standardisation of data in the CKAN data catalogue
+(because it requires data to be in a certain format to work), and
 * it makes reporting transparent and reproducible by saving the work flow as R code.
 
 # How can I use it?
@@ -20,21 +22,22 @@ first date and numeric variables are pre-selected by default.
 * View the graph in the "plot" tab, modify graphical parameters in the side panel 
 as required.
 * Download the graph as PDF, plus the R code to reproduce the graph as text.
-* Coming soon: paste your CKAN API key to upload the PDF graph and R code back 
-to the data catalogue.
+* To save the data back to CKAN, paste your CKAN API key to unlock the upload of 
+the PDF graph and R code.
 
-Logged in users can find their API key on their profile page (click on your user name).
-If your data doesn't conform to the required standards, the graph may not work.
+How to get the API key: Logged in CKAN users can find their API key on their 
+profile page (click on your user name). Contact the author of this application 
+to get an account on the configured CKAN.
 
 # How can I use the Time Series Explorer on my own data?
 
 This application will only work with univariate (and optionally grouped) time series data.
-Your data need to be on the [internal CKAN data catalogue](http://internal-data.dpaw.wa.gov.au/), 
+Your data need to be on the [CKAN data catalogue](http://data-demo.dpaw.wa.gov.au/), 
 conforming to a particular standard:
 
 * The CKAN dataset must carry the tag `format_csv_ts` in order to show up in `Choose dataset`.
-* The dataset title should include the asset (what the data is about, e.g. "Seagrass cover", 
-"Finfish abundance", "Boat registrations") and the area with full name and 
+* The dataset title should include the asset (what the data is about, e.g. 
+"Seagrass cover", "Finfish abundance", "Boat registrations") and the area with full name and 
 abbreviated park designator ("Shark Bay MPA"). Backspace and type into the select box to filter!
 * The data must be attached to the dataset as CSV resource in the format described below.
 * If you want to upload figure and code directly, existing resources (one PDF, 
@@ -44,11 +47,6 @@ Ideally, Manage > resources > re-order resources so CSV, PDF and TXT are the fir
 * You must be authorised to update the data catalogue if you want to upload figure and script directly.
 
 # What's the required format and structure for the CSV file?
-Generally, the [Marine Science standards for observational datasets](
-https://confluence.dpaw.wa.gov.au/display/MSIM/Quality+requirements+and+format+standards+for+observational+datasets) 
-apply - especially for file and 
-variable names.
-
 For univariate time series, the CSV **must** have:
 
 * one column "datetime", "Datetime" with any optinoal separator between date and 

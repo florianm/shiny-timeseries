@@ -1,20 +1,29 @@
 #' Imports, config, global functions
 library(shiny)
-require(shinyIncubator)
-require(markdown)
-require(whisker)
-require(scales)
-require(Hmisc)
-require(plyr)
-require(dplyr)
-require(tidyr)
-require(lubridate)
-require(ggplot2)
-require(qcc)
-require(RCurl)
-require(ckanr)
+# require(shinyIncubator) || install.packages("shinyIncubator")
+require(markdown) || install.packages("markdown")
+require(whisker) || install.packages("whisker")
+require(Hmisc) || install.packages("Hmisc")
+require(ggplot2) || install.packages("ggplot2")
+require(qcc) || install.packages("qcc")
+require(scales) || install.packages("scales")
+require(RCurl) || install.packages("RCurl")
+require(rjson) || install.packages("rjson")
+require(lubridate) || install.packages("lubridate")
+require(tidyr) || install.packages("tidyr")
+require(dplyr) || install.packages("dplyr")
+require(devtools) || install.packages("devtools")
+require(ckanr) || devtools::install_github("ropensci/ckanr")
 
-ckanr::ckanr_setup(url = "http://internal-data.dpaw.wa.gov.au/")
+#------------------------------------------------------------------------------#
+# ckanR setup
+
+# Constants
+ckanr::ckanr_setup(url = "http://data-demo.dpaw.wa.gov.au/")
+# ckanr::ckanr_setup(url = "http://internal-data.dpaw.wa.gov.au/")
+
+#------------------------------------------------------------------------------#
+# Data loading
 
 #' Load CSV data from a URL and guess variable classes
 #'
@@ -65,6 +74,5 @@ list_filter <- function(lol, key, val){
 #' @return A named list of CKAN resource names (as keys) and URLs (as values)
 res2nl <- function(resource_dict, filetype_string){
   rr <- list_filter(resource_dict, "format", filetype_string)
-  i <- setNames(lapply(rr, function(x){x$id}),
-                lapply(rr, function(x){x$name}))
+  i <- setNames(lapply(rr, function(x){x$id}), lapply(rr, function(x){x$name}))
 }
