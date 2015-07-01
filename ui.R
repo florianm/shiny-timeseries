@@ -6,6 +6,7 @@ shinyUI(
 
         wellPanel(
           h4("Load Data"),
+          uiOutput("ckanr"),
           uiOutput("ckan_package"),
           uiOutput("ckan_csv"),
           uiOutput("varmap")
